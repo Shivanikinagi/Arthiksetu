@@ -25,3 +25,15 @@ class MonthlyEarning(models.Model):
 
     def __str__(self):
         return self.month
+
+class Earning(models.Model):
+    """Model to store individual earning entries from Android Studio"""
+    platform = models.CharField(max_length=50)
+    amount = models.IntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.platform} - Rs.{self.amount} ({self.created_at.strftime('%Y-%m-%d')})"
+    
+    class Meta:
+        ordering = ['-created_at']  # Most recent first

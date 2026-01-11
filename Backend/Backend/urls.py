@@ -19,11 +19,12 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from django.http import JsonResponse
-from app.views import DashboardView, VerifyDocumentView, ParseSMSView, RecommendSchemesView, AllSchemesView, TaxCalculationView, EligibleLoansView, GenerateReportView, DownloadReportView, SendOTPView, VerifyOTPView
+from app.views import DashboardView, VerifyDocumentView, ParseSMSView, RecommendSchemesView, AllSchemesView, TaxCalculationView, EligibleLoansView, GenerateReportView, DownloadReportView, SendOTPView, VerifyOTPView, receive_earning, android_dashboard
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/dashboard', DashboardView.as_view()), # Remove trailing slash
+    path('api/dashboard', DashboardView.as_view()), # Original dashboard
+    path('api/dashboard/', android_dashboard),  # Android Studio dashboard
     path('api/verify_document', VerifyDocumentView.as_view()),
     path('api/parse_sms', ParseSMSView.as_view()),
     path('api/recommend_schemes', RecommendSchemesView.as_view()),
@@ -34,6 +35,7 @@ urlpatterns = [
     path('api/download_report/<str:report_id>', DownloadReportView.as_view()),
     path('api/send_otp', SendOTPView.as_view()),
     path('api/verify_otp', VerifyOTPView.as_view()),
+    path('api/earnings/', receive_earning),  # Endpoint for Android Studio
     path('', lambda request: JsonResponse({'message': 'Backend is running'})),
 ]
 

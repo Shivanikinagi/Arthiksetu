@@ -3,7 +3,9 @@ from django.http import HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
-from .models import IncomeSource, MonthlyEarning
+from rest_framework.decorators import api_view
+from .models import IncomeSource, MonthlyEarning, Earning
+from django.db.models import Sum
 import time
 import sys
 import os
@@ -537,3 +539,132 @@ class SendOTPView(APIView):
 class VerifyOTPView(APIView):
     def post(self, request):
         return Response({"message": "Verification successful", "success": True})
+
+# API endpoint to receive earning data from Android Studio
+@api_view(['GET', 'POST'])
+def receive_earning(request):
+    """
+    Receives earning data from Android Studio app
+    GET: Returns endpoint info
+    POST: Saves earning data
+    Expected POST data format:
+    {
+        "source": "Swiggy/Zomato/etc",
+        "amount": 1500,
+        "date": "2026-01-11",
+        "month": "Jan"
+    }
+    """
+    
+    # Handle GET request (for testing)
+    if request.method == 'GET':
+        return Response({
+            "status": "online",
+            "message": "Earnings API endpoint is working!",
+            "endpoint": "/api/earnings/",
+            "method": "POST",
+            "expected_data": {
+                "source": "string (e.g., Swiggy, Zomato)",
+                "amount": "number",
+                "month": "string (e.g., Jan, Feb)",
+                "date": "string (optional)"
+            },
+            "example": {
+                "source": "Swiggy",
+                "amount": 1500,
+                "month": "Jan"
+            }
+        })
+    
+    # Handle POST request
+    print("📱 Received earning data from Android:")
+    print(request.data)
+    
+    try:
+        # Accept both 'source' and 'platform' fields
+        source_name = request.data.get('source') or request.data.get('platform', 'Android App')
+        amount = float(request.data.get('amount', 0))
+        month = request.data.get('month', datetime.datetime.now().strftime("%b"))
+        
+        print(f"✅ Processing: {source_name} - Rs.{amount} for {month}")
+        
+        # 1. Save to Earning model (individual entries for Android)
+        earning_entry = Earning.objects.create(
+            platform=source_name,
+            amount=int(amount)
+        )
+        print(f"✅ Earning entry created: ID={earning_entry.id}")
+        
+        # 2. Update or create income source
+        source, created = IncomeSource.objects.get_or_create(
+            name=source_name,
+            defaults={'amount': 0, 'status': 'pending', 'verified': False}
+        )
+        source.amount += amount
+        source.save()
+        print(f"✅ Income Source updated: {source.name} - Total: Rs.{source.amount}")
+        
+        # 3. Update or create monthly earning
+        earning, created = MonthlyEarning.objects.get_or_create(
+            month=month,
+            defaults={'amount': 0}
+        )
+        earning.amount += amount
+        earning.save()
+        print(f"✅ Monthly earning updated: {month} - Total: Rs.{earning.amount}")
+        print(f"💾 Data saved to database successfully!")
+        
+        return Response({
+            "status": "saved",
+            "message": "Earning data saved successfully",
+            "data": {
+                "id": earning_entry.id,
+                "source": source_name,
+                "amount": amount,
+                "month": month,
+                "total_for_source": float(source.amount),
+                "total_for_month": float(earning.amount),
+                "created_at": earning_entry.created_at.isoformat()
+            }
+        })
+    except Exception as e:
+        print(f"❌ Error saving earning: {e}")
+        return Response({
+            "status": "error",
+            "message": str(e)
+        }, status=400)
+
+# Dashboard API endpoint for Android Studio
+@api_view(['GET'])
+def android_dashboard(request):
+    """
+    Returns aggregated earning data grouped by platform
+    For Android Studio integration
+    """
+    # Get aggregated data by platform
+    data = (
+        Earning.objects
+        .values('platform')
+        .annotate(total=Sum('amount'))
+        .order_by('-total')
+    )
+    
+    # Get total earnings
+    total_earnings = Earning.objects.aggregate(Sum('amount'))['amount__sum'] or 0
+    
+    # Get recent entries
+    recent_entries = list(
+        Earning.objects
+        .values('id', 'platform', 'amount', 'created_at')
+        .order_by('-created_at')[:10]
+    )
+    
+    return Response({
+        "status": "success",
+        "summary": {
+            "total_earnings": total_earnings,
+            "total_entries": Earning.objects.count(),
+            "platforms": list(data)
+        },
+        "recent_entries": recent_entries
+    })
