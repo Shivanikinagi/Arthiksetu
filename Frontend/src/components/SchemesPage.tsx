@@ -31,8 +31,8 @@ export function SchemesPage() {
           category: "General"
         };
 
-        // 2. Fetch schemes based on real income
-        return fetch('http://localhost:8000/api/recommend_schemes', {
+        // 2. Fetch schemes based on real income (and simplify them)
+        return fetch('http://localhost:8000/api/simplify_scheme', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(userProfile)
@@ -88,7 +88,7 @@ export function SchemesPage() {
                     category: "General"
                   };
 
-                  return fetch('http://localhost:8000/api/recommend_schemes', {
+                  return fetch('http://localhost:8000/api/simplify_scheme', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(userProfile)
@@ -204,7 +204,9 @@ export function SchemesPage() {
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-gray-600 mb-3">{scheme.description}</p>
+                      <p className="text-sm text-gray-600 mb-3 font-medium">
+                        {scheme.simple_explanation || scheme.description}
+                      </p>
                     </div>
                   </div>
                 </div>
