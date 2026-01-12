@@ -75,16 +75,6 @@ npm install
 npm run dev
 ```
 
----
-
-## 📸 Screenshots
-
-| Dashboard | Chatbot |
-|:---:|:---:|
-| *(Add Dashboard Screenshot)* | *(Add Chatbot Screenshot)* |
-
----
-
 ## 🤝 Contribution
 Contributions are welcome! Please fork the repository and create a pull request for any feature enhancements.
 
