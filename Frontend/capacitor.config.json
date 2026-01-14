@@ -1,9 +1,0 @@
-{
-  "appId": "com.arthiksetu.app",
-  "appName": "ArthikSetu",
-  "webDir": "build",
-  "server": {
-    "url": "http://192.168.31.212:3000",
-    "cleartext": true
-  }
-}

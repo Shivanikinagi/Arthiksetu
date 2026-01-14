@@ -53,3 +53,4 @@ tmp/
 
 # Firebase Secrets
 Backend/serviceAccountKey.json
+node_modules
