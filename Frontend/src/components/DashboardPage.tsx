@@ -5,6 +5,10 @@ import {
   Upload,
   CheckCircle2,
   TrendingUp,
+  ScanFace,
+  FileText,
+  Lock,
+  Bot,
 } from 'lucide-react';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
 
@@ -89,14 +93,17 @@ export function DashboardPage({ onNavigate, onToggleSidebar }: DashboardPageProp
           <h2 className="text-5xl font-bold tracking-tight">₹{totalEarnings.toLocaleString('en-IN')}</h2>
         </div>
 
-        {/* Action Button (White Bar) */}
-        <Button
+        {/* Action Button (White Bar - Fake Input Style) */}
+        <div
           onClick={() => fileInputRef.current?.click()}
-          className="w-full bg-white text-[#0A1F44] hover:bg-gray-100 border-0 h-14 rounded-2xl font-semibold text-base shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-transform"
+          className="w-full bg-white text-[#0A1F44] h-12 rounded-xl px-4 flex items-center justify-between shadow-lg cursor-pointer active:scale-95 transition-transform mt-4"
         >
-          <Upload className="w-5 h-5" />
-          Add Proof
-        </Button>
+          <span className="text-gray-400 text-sm font-medium">Upload Document for Verification...</span>
+          <div className="flex items-center gap-2 text-[#0A1F44] font-semibold text-sm">
+            <Upload className="w-4 h-4" />
+            <span>Add Proof</span>
+          </div>
+        </div>
         {uploadMessage && <p className="text-center text-xs text-green-400 mt-2">{uploadMessage}</p>}
 
         <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange} accept=".pdf,.jpg,.png" />
@@ -105,7 +112,29 @@ export function DashboardPage({ onNavigate, onToggleSidebar }: DashboardPageProp
       {/* Bottom Sheet (White Content) */}
       <div className="bg-[#F8F9FA] rounded-t-[32px] px-6 pt-8 pb-32 min-h-[calc(100vh-300px)] animate-in slide-in-from-bottom-10 duration-500">
 
-        {/* Removed Quick Actions Row as requested, moved to Sidebar */}
+        {/* Quick Actions Grid */}
+        {/* Quick Actions Grid */}
+        <div className="grid grid-cols-3 gap-3 mb-8">
+          {[
+            { label: 'Analyzer', id: 'ai-assistant', icon: FileText },
+            { label: 'Decoder', id: 'message-decoder', icon: FileText }, // Distinct icon if available
+            { label: 'Schemes', id: 'schemes', icon: Lock }, // Or Gift
+            { label: 'Verify', id: 'document-verification', icon: ScanFace },
+            { label: 'Tax', id: 'tax', icon: CheckCircle2 }, // Placeholder
+            { label: 'Chatbot', id: 'chatbot', icon: Bot }, // Placeholder
+          ].map((item) => (
+            <button
+              key={item.id}
+              onClick={() => onNavigate && onNavigate(item.id)}
+              className="flex flex-col items-center justify-center bg-white rounded-2xl shadow-sm border border-gray-100 p-4 h-28 active:scale-95 transition-transform"
+            >
+              <item.icon className="w-8 h-8 text-[#0A1F44] mb-3" strokeWidth={1.5} />
+              <span className="text-xs font-semibold text-[#0A1F44] tracking-wide">
+                {item.label}
+              </span>
+            </button>
+          ))}
+        </div>
 
         {/* Stats Grid */}
         <div className="space-y-4 mb-8">
