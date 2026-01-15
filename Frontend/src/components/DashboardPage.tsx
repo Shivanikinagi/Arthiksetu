@@ -113,7 +113,6 @@ export function DashboardPage({ onNavigate, onToggleSidebar }: DashboardPageProp
       <div className="bg-[#F8F9FA] rounded-t-[32px] px-6 pt-8 pb-32 min-h-[calc(100vh-300px)] animate-in slide-in-from-bottom-10 duration-500">
 
         {/* Quick Actions Grid */}
-        {/* Quick Actions Grid */}
         <div className="grid grid-cols-3 gap-3 mb-8">
           {[
             { label: 'Analyzer', id: 'ai-assistant', icon: FileText },
