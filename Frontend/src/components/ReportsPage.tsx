@@ -66,11 +66,10 @@ export function ReportsPage() {
                 variant="outline"
                 className="border-[#0A1F44] text-[#0A1F44] hover:bg-[#0A1F44] hover:text-white"
                 onClick={() => {
-                  if (report.id === 'annual_2024' || report.name.includes("Annual Income Report")) {
+                  if (report.id === 'annual_2024') {
                     window.open('http://localhost:8000/api/generate_report', '_blank');
                   } else {
-                    const fileName = report.name.replace(/\s+/g, '_').toLowerCase();
-                    alert(`Downloading ${fileName}.pdf...`);
+                    window.open(`http://localhost:8000/api/download_report/${report.id}`, '_blank');
                   }
                 }}
               >
