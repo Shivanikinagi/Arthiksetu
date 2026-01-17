@@ -102,12 +102,21 @@ export function ProfilePage() {
               </span>
             </div>
             <p className="text-gray-600 mb-4">Member since January 2024</p>
-            <Button
-              onClick={() => isEditing ? handleSave() : setIsEditing(true)}
-              className={`${isEditing ? 'bg-[#1E7F5C] hover:bg-[#16654a]' : 'bg-[#F7931E] hover:bg-[#e07d0a]'} text-white border-0`}
-            >
-              {isEditing ? 'Save Changes' : 'Edit Profile'}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => isEditing ? handleSave() : setIsEditing(true)}
+                className={`${isEditing ? 'bg-[#1E7F5C] hover:bg-[#16654a]' : 'bg-[#F7931E] hover:bg-[#e07d0a]'} text-white border-0`}
+              >
+                {isEditing ? 'Save Changes' : 'Edit Profile'}
+              </Button>
+              <Button
+                variant="outline"
+                className="border-red-500 text-red-500 hover:bg-red-50"
+                onClick={() => alert("Firebase Sign Out Logic would be triggered here.")}
+              >
+                Log Out
+              </Button>
+            </div>
           </div>
         </div>
 

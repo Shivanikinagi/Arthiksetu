@@ -13,6 +13,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 try:
     from sms_parser import SMSParser
     from schemes import get_eligible_schemes, SCHEMES_DB
+    from gemini_service import analyze_earning_trend
 except ImportError:
     # Ensure standard import works if path is correct
     pass
@@ -37,10 +38,14 @@ class DashboardView(APIView):
         
         for source in income_sources:
             source['color'] = COLOR_MAP.get(source['name'], '#3B82F6')
+            
+        # Get AI Insight (Optional)
+        ai_insight = analyze_earning_trend(earnings)
 
         return Response({
             "incomeSources": income_sources,
-            "earningsData": earnings
+            "earningsData": earnings,
+            "aiInsight": ai_insight
         })
 
 class VerifyDocumentView(APIView):
