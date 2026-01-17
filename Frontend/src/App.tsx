@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Sidebar } from './components/Sidebar';
+import { Navigation } from './components/Navigation';
 import { DashboardPage } from './components/DashboardPage';
 import { TaxPage } from './components/TaxPage';
 import { SchemesPage } from './components/SchemesPage';
@@ -14,84 +14,146 @@ import { DocumentVerification } from './components/DocumentVerification';
 
 type PageType = 'dashboard' | 'tax' | 'schemes' | 'loans' | 'reports' | 'profile' | 'ai-assistant' | 'about' | 'how-it-works' | 'privacy' | 'terms' | 'help' | 'contact' | 'faq' | 'unified-dashboard' | 'chatbot' | 'message-decoder' | 'document-verification';
 
+const StaticPage = ({ title, content }: { title: string; content: React.ReactNode }) => (
+  <div className="max-w-4xl mx-auto px-4 py-12">
+    <h1 className="text-3xl font-bold text-[#0A1F44] mb-6">{title}</h1>
+    <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-100 text-gray-600 leading-relaxed">
+      {content}
+    </div>
+  </div>
+);
+
 export default function App() {
   const [currentPage, setCurrentPage] = useState<PageType>('dashboard');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  const handleNavigate = (page: string) => {
-    setCurrentPage(page as PageType);
-    setIsSidebarOpen(false);
-  };
 
   const renderPage = () => {
     switch (currentPage) {
-      case 'dashboard': return <DashboardPage onNavigate={handleNavigate} onToggleSidebar={() => setIsSidebarOpen(true)} />;
-      case 'unified-dashboard': return <UnifiedDashboard />;
-      case 'chatbot': return <AIChatbot />;
-      case 'message-decoder': return <MessageDecoder />;
-      case 'document-verification': return <DocumentVerification />;
-      case 'profile': return <ProfilePage onToggleSidebar={() => setIsSidebarOpen(true)} />;
-      case 'ai-assistant': return <AIAssistantPage />;
-
-      case 'schemes': return <SchemesPage onNavigate={handleNavigate} onToggleSidebar={() => setIsSidebarOpen(true)} />;
-      case 'tax': return <TaxPage onNavigate={handleNavigate} onToggleSidebar={() => setIsSidebarOpen(true)} />;
-      case 'reports': return <ReportsPage onNavigate={handleNavigate} onToggleSidebar={() => setIsSidebarOpen(true)} />;
-
-      default: return <DashboardPage onNavigate={handleNavigate} onToggleSidebar={() => setIsSidebarOpen(true)} />;
+      case 'dashboard':
+        return <DashboardPage />;
+      case 'unified-dashboard':
+        return <UnifiedDashboard />;
+      case 'chatbot':
+        return <AIChatbot />;
+      case 'message-decoder':
+        return <MessageDecoder />;
+      case 'document-verification':
+        return <DocumentVerification />;
+      case 'tax':
+        return <TaxPage />;
+      case 'schemes':
+        return <SchemesPage />;
+      case 'loans':
+        return <Loans />;
+      case 'reports':
+        return <ReportsPage />;
+      case 'profile':
+        return <ProfilePage />;
+      case 'ai-assistant':
+        return <AIAssistantPage />;
+      case 'about':
+        return <StaticPage title="About Us" content="ArthikSetu is a pioneering platform dedicated to empowering India's gig economy workers. We bridge the gap between hard work and financial stability by providing a unified interface for earnings tracking, tax management, and access to government benefits. Our mission is to financial inclusion for every independent worker." />;
+      case 'how-it-works':
+        return <StaticPage title="How It Works" content={
+          <ul className="list-disc pl-5 space-y-2">
+            <li><strong>Connect Accounts:</strong> Securely link your gig platform accounts (Zomato, Swiggy, Uber, etc.).</li>
+            <li><strong>Track Earnings:</strong> View all your income in one unified dashboard.</li>
+            <li><strong>Get Recommendations:</strong> Our AI analyzes your profile to suggest relevant government schemes.</li>
+            <li><strong>Manage Taxes:</strong> Generated audit-safe reports and file ITR directly through the portal.</li>
+          </ul>
+        } />;
+      case 'privacy':
+        return <StaticPage title="Privacy Policy" content="At ArthikSetu, we take your privacy seriously. Your data is encrypted and stored locally on your device wherever possible. We strictly adhere to India's Digital Personal Data Protection Act, 2023. We do not sell your personal information to third parties." />;
+      case 'terms':
+        return <StaticPage title="Terms of Service" content="By using ArthikSetu, you agree to our standard terms of service. The platform is provided 'as is' to assist gig workers in managing their finances. Users are responsible for the accuracy of the data they manually input." />;
+      case 'help':
+        return <StaticPage title="Help Center" content="Need assistance? Our support team is available 24/7. Browse our tutorials or chat with our AI assistant for immediate help with platform features." />;
+      case 'contact':
+        return <StaticPage title="Contact Us" content={
+          <div>
+            <p className="mb-4">We'd love to hear from you. Reach out to us through any of the following channels:</p>
+            <p><strong>Email:</strong> support@arthiksetu.in</p>
+            <p><strong>Phone:</strong> xxxx-xxx-xxx</p>
+            <p><strong>Address:</strong> ArthikSetu HQ, Baner Road, Pune, Maharashtra 411045</p>
+          </div>
+        } />;
+      case 'faq':
+        return <StaticPage title="Frequently Asked Questions" content={
+          <div className="space-y-4">
+            <div>
+              <p className="font-semibold text-[#0A1F44]">Is ArthikSetu free to use?</p>
+              <p>Yes, the core features of tracking earnings and viewing schemes are completely free for gig workers.</p>
+            </div>
+            <div>
+              <p className="font-semibold text-[#0A1F44]">Is my data safe?</p>
+              <p>Absolutely. We use bank-grade encryption and do not share your financial data without explicit consent.</p>
+            </div>
+          </div>
+        } />;
+      default:
+        return <DashboardPage />;
     }
   };
 
   return (
-    <div className="flex h-screen bg-[#f8f9fa] font-['Inter',sans-serif] overflow-hidden">
+    <div className="min-h-screen bg-[#F4F6F8] font-['Inter',sans-serif]">
+      <Navigation currentPage={currentPage === 'dashboard' || currentPage === 'tax' || currentPage === 'schemes' || currentPage === 'loans' || currentPage === 'reports' || currentPage === 'profile' || currentPage === 'ai-assistant' ? currentPage : 'dashboard'} onNavigate={(page: any) => setCurrentPage(page)} />
+      <main className="pb-12">
+        {renderPage()}
+      </main>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+      {/* Footer */}
+      <footer className="bg-white border-t border-gray-200 mt-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div>
+              <div className="flex items-center space-x-2 mb-4">
+                <div className="w-10 h-10 bg-[#0A1F44] rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold">AS</span>
+                </div>
+                <h3 className="text-[#0A1F44]">ArthikSetu</h3>
+              </div>
+              <p className="text-sm text-gray-600">
+                Empowering India's gig workers with unified earnings tracking,
+                tax assistance, and government benefit access.
+              </p>
+            </div>
 
-        {/* Mobile Header (optional, usually pages have their own headers, but we might want a consistent one if pages don't cover it) */}
-        {/* We assume pages handle their header visuals, but we ensure the container allows scrolling */}
+            <div>
+              <h4 className="text-[#0A1F44] mb-4">Quick Links</h4>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li><button onClick={() => setCurrentPage('about')} className="hover:text-[#0A1F44]">About Us</button></li>
+                <li><button onClick={() => setCurrentPage('how-it-works')} className="hover:text-[#0A1F44]">How It Works</button></li>
+                <li><button onClick={() => setCurrentPage('privacy')} className="hover:text-[#0A1F44]">Privacy Policy</button></li>
+                <li><button onClick={() => setCurrentPage('terms')} className="hover:text-[#0A1F44]">Terms of Service</button></li>
+              </ul>
+            </div>
 
-        <main className="flex-1 overflow-y-auto scroll-smooth pb-20">
-          {renderPage()}
-        </main>
+            <div>
+              <h4 className="text-[#0A1F44] mb-4">Support</h4>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li><button onClick={() => setCurrentPage('help')} className="hover:text-[#0A1F44]">Help Center</button></li>
+                <li><button onClick={() => setCurrentPage('contact')} className="hover:text-[#0A1F44]">Contact Us</button></li>
+                <li><button onClick={() => setCurrentPage('faq')} className="hover:text-[#0A1F44]">FAQs</button></li>
+                <li className="flex items-center gap-2">
+                  <span>Helpline:</span>
+                  <a href="tel:18001234567" className="text-[#0A1F44] font-medium hover:underline">xxxx-xxx-xxxx</a>
+                </li>
+              </ul>
+            </div>
+          </div>
 
-        {/* Mobile Sidebar Drawer (Overlay) */}
-        <div>
-          <Sidebar
-            isOpen={isSidebarOpen}
-            onClose={() => setIsSidebarOpen(false)}
-            onNavigate={(id) => handleNavigate(id as PageType)}
-            currentPage={currentPage}
-            variant="drawer"
-          />
+          <div className="mt-8 pt-8 border-t border-gray-200 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-sm text-gray-600">
+              © 2024 ArthikSetu. All rights reserved.
+            </p>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-gray-600">🔒 Privacy-first, user-owned data</span>
+              <span className="text-gray-400">•</span>
+              <span className="text-gray-600">Government compliant platform</span>
+            </div>
+          </div>
         </div>
-
-        {/* Mobile Bottom Navigation */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex justify-around items-center h-16 px-6 z-40 safe-area-bottom shadow-[0_-5px_10px_rgba(0,0,0,0.02)]">
-          <button
-            onClick={() => handleNavigate('dashboard')}
-            className={`flex flex-col items-center gap-1 transition-colors ${currentPage === 'dashboard' ? 'text-[#0A1F44]' : 'text-gray-400'}`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={currentPage === 'dashboard' ? "2.5" : "2"} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
-            <span className="text-[10px] font-medium">Home</span>
-          </button>
-
-          <button
-            onClick={() => handleNavigate('unified-dashboard')}
-            className={`flex flex-col items-center gap-1 transition-colors ${currentPage === 'unified-dashboard' ? 'text-[#0A1F44]' : 'text-gray-400'}`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={currentPage === 'unified-dashboard' ? "2.5" : "2"} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6"><rect width="7" height="7" x="3" y="3" rx="1" /><rect width="7" height="7" x="14" y="3" rx="1" /><rect width="7" height="7" x="14" y="14" rx="1" /><rect width="7" height="7" x="3" y="14" rx="1" /></svg>
-            <span className="text-[10px] font-medium">Services</span>
-          </button>
-
-          <button
-            onClick={() => handleNavigate('profile')}
-            className={`flex flex-col items-center gap-1 transition-colors ${currentPage === 'profile' ? 'text-[#0A1F44]' : 'text-gray-400'}`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={currentPage === 'profile' ? "2.5" : "2"} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-            <span className="text-[10px] font-medium">Profile</span>
-          </button>
-        </div>
-      </div>
+      </footer>
     </div>
   );
 }
