@@ -1,253 +1,105 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, Alert, KeyboardAvoidingView, Platform, Dimensions } from 'react-native';
-import { User, Mail, Phone, MapPin, LogOut, Edit2, Check, Camera, Star, Briefcase, Truck, PenTool } from 'lucide-react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { User, Mail, Phone, MapPin, Briefcase, Edit2, Save } from 'lucide-react-native';
+import { ScreenWrapper } from '../components/ScreenWrapper';
+import { GlassCard, SectionTitle, GlassInput } from '../components/GlassComponents';
+import { LinearGradient } from 'expo-linear-gradient';
 
-const { width } = Dimensions.get('window');
-
-export default function ProfileScreen() {
+export default function ProfileScreen({ onBack }: { onBack?: () => void }) {
     const [isEditing, setIsEditing] = useState(false);
     const [profile, setProfile] = useState({
-        name: 'Rahul Sharma',
-        role: 'Gig Worker • 134 Tasks',
-        email: 'rahul.sharma@example.com',
-        phone: '+91 98765 43210',
-        location: 'Bangalore, Karnataka',
-        about: "I am an elite tasker. I verify documents and deliver packages with a smile. Ask me for more info."
+        name: "Rahul Sharma",
+        email: "rahul.sharma@gmail.com",
+        phone: "+91 98765 43210",
+        location: "Bangalore, Karnataka",
+        occupation: "Delivery Partner (Uber/Swiggy)"
     });
 
-    const SKILLS = ["Heavy Lifting", "Verified", "Fast Delivery", "Biker"];
-
-    const handleSave = () => {
-        setIsEditing(false);
-        Alert.alert("Success", "Profile updated successfully!");
-    };
-
-    const handleLogout = () => {
-        Alert.alert(
-            "Log Out",
-            "Are you sure you want to log out?",
-            [
-                { text: "Cancel", style: "cancel" },
-                { text: "Log Out", style: "destructive", onPress: () => Alert.alert("Logged Out", "You have been logged out.") }
-            ]
-        );
-    };
-
     return (
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
-            <ScrollView showsVerticalScrollIndicator={false}>
+        <ScreenWrapper title="Profile" subtitle="PERSONAL DETAILS" showBack onBack={onBack}>
 
-                {/* 1. CURVED HEADER */}
-                <View style={styles.headerCurve}>
-                    <View style={styles.headerTopBar}>
-                        <TouchableOpacity onPress={handleLogout}>
-                            <LogOut color="white" size={24} />
-                        </TouchableOpacity>
-                        <Text style={styles.headerTitle}>WORKER PROFILE</Text>
-                        <TouchableOpacity onPress={() => setIsEditing(!isEditing)}>
-                            {isEditing ? <Check color="#4ADE80" size={24} /> : <Edit2 color="white" size={24} />}
-                        </TouchableOpacity>
-                    </View>
+            <View style={{ alignItems: 'center', marginBottom: 30 }}>
+                <View style={styles.avatarContainer}>
+                    <LinearGradient colors={['#06b6d4', '#2563eb']} style={styles.avatarGradient}>
+                        <Text style={styles.avatarText}>{profile.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}</Text>
+                    </LinearGradient>
                 </View>
+                {isEditing ? (
+                    <GlassInput
+                        value={profile.name}
+                        onChangeText={(t) => setProfile({ ...profile, name: t })}
+                        style={{ width: 200, textAlign: 'center' }}
+                    />
+                ) : (
+                    <Text style={styles.name}>{profile.name}</Text>
+                )}
+                <Text style={styles.role}>Gig Driver • Platinum Member</Text>
 
-                {/* 2. FLOATING AVATAR */}
-                <View style={styles.avatarWrapper}>
-                    <View style={styles.avatarContainer}>
-                        <Text style={styles.avatarText}>RS</Text>
-                        <View style={styles.verifiedBadge}>
-                            <Check size={12} color="white" strokeWidth={4} />
-                        </View>
-                    </View>
-                </View>
+                <TouchableOpacity
+                    onPress={() => setIsEditing(!isEditing)}
+                    style={{ position: 'absolute', right: 0, top: 0, padding: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 20 }}
+                >
+                    {isEditing ? <Save size={20} color="#34d399" /> : <Edit2 size={20} color="#22d3ee" />}
+                </TouchableOpacity>
+            </View>
 
-                {/* 3. PROFILE INFO */}
-                <View style={styles.contentContainer}>
-                    {isEditing ? (
-                        <TextInput
-                            style={styles.nameInput}
-                            value={profile.name}
-                            onChangeText={t => setProfile({ ...profile, name: t })}
-                        />
-                    ) : (
-                        <Text style={styles.name}>{profile.name}</Text>
-                    )}
+            <SectionTitle title="Personal Information" />
+            <GlassCard intensity={15}>
+                <ProfileRow icon={Mail} label="Email" value={profile.email} isLast={false} isEditing={isEditing} onChange={(t: any) => setProfile({ ...profile, email: t })} />
+                <ProfileRow icon={Phone} label="Phone" value={profile.phone} isLast={false} isEditing={isEditing} onChange={(t: any) => setProfile({ ...profile, phone: t })} />
+                <ProfileRow icon={MapPin} label="Location" value={profile.location} isLast={false} isEditing={isEditing} onChange={(t: any) => setProfile({ ...profile, location: t })} />
+                <ProfileRow icon={Briefcase} label="Occupation" value={profile.occupation} isLast={true} isEditing={isEditing} onChange={(t: any) => setProfile({ ...profile, occupation: t })} />
+            </GlassCard>
 
-                    {/* Rating Stars Simulation */}
-                    <View style={styles.ratingRow}>
-                        <Text style={styles.ratingScore}>4.8</Text>
-                        <View style={{ flexDirection: 'row', gap: 2 }}>
-                            {[1, 2, 3, 4, 5].map(i => <Star key={i} size={14} color="#FBBF24" fill="#FBBF24" />)}
-                        </View>
-                        <Text style={styles.taskCount}>{profile.role}</Text>
-                    </View>
+            <SectionTitle title="Earnings Stats" />
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+                <StatCard label="Total Earned" value="₹7.2L" color="#34d399" />
+                <StatCard label="Verified" value="100%" color="#22d3ee" />
+                <StatCard label="Credit Score" value="750" color="#f472b6" />
+            </View>
 
-                    {/* SKILLS CHIPS */}
-                    <View style={styles.section}>
-                        <Text style={styles.sectionLabel}>Skills</Text>
-                        <View style={styles.skillsRow}>
-                            {SKILLS.map((skill, i) => (
-                                <View key={i} style={styles.skillChip}>
-                                    <Text style={styles.skillText}>{skill.toUpperCase()}</Text>
-                                </View>
-                            ))}
-                        </View>
-                    </View>
-
-                    {/* ABOUT ME CARD */}
-                    <View style={styles.section}>
-                        <Text style={styles.sectionLabel}>About me</Text>
-                        {isEditing ? (
-                            <TextInput
-                                style={[styles.aboutText, { borderBottomWidth: 1, borderColor: '#ddd' }]}
-                                value={profile.about}
-                                multiline
-                                onChangeText={t => setProfile({ ...profile, about: t })}
-                            />
-                        ) : (
-                            <Text style={styles.aboutText}>{profile.about}</Text>
-                        )}
-                    </View>
-
-                    {/* PORTFOLIO / INFO GRID */}
-                    <View style={styles.section}>
-                        <Text style={styles.sectionLabel}>Details</Text>
-                        <View style={styles.detailsGrid}>
-                            <DetailItem icon={Mail} label="Email" value={profile.email} />
-                            <DetailItem icon={Phone} label="Phone" value={profile.phone} />
-                            <DetailItem icon={MapPin} label="City" value={profile.location} />
-                        </View>
-                    </View>
-
-                    {/* BIG GREEN ACTION BUTTON */}
-                    <TouchableOpacity style={styles.actionButton} onPress={isEditing ? handleSave : () => Alert.alert("Hired!", "You are available for work.")}>
-                        <Text style={styles.actionBtnText}>{isEditing ? "SAVE PROFILE" : "AVAILABLE FOR WORK"}</Text>
-                    </TouchableOpacity>
-
-                </View>
-            </ScrollView>
-        </KeyboardAvoidingView>
+        </ScreenWrapper>
     );
 }
 
-const DetailItem = ({ icon: Icon, label, value }: any) => (
-    <View style={styles.detailCard}>
-        <Icon size={20} color="#6B7280" />
-        <View>
-            <Text style={styles.detailLabel}>{label}</Text>
-            <Text style={styles.detailValue} numberOfLines={1}>{value}</Text>
+const ProfileRow = ({ icon: Icon, label, value, isLast, isEditing, onChange }: any) => (
+    <View style={[styles.row, !isLast && styles.borderBottom]}>
+        <View style={styles.iconBox}>
+            <Icon size={18} color="#94a3b8" />
+        </View>
+        <View style={{ flex: 1 }}>
+            <Text style={styles.label}>{label}</Text>
+            {isEditing ? (
+                <GlassInput
+                    value={value}
+                    onChangeText={onChange}
+                    style={{ padding: 0, height: 40, backgroundColor: 'transparent', borderWidth: 0, marginTop: -4 }}
+                    placeholder={label}
+                />
+            ) : (
+                <Text style={styles.value}>{value}</Text>
+            )}
         </View>
     </View>
 );
 
+const StatCard = ({ label, value, color }: any) => (
+    <GlassCard intensity={10} style={{ flex: 1, alignItems: 'center', padding: 16 }}>
+        <Text style={{ color: color, fontSize: 18, fontWeight: 'bold', marginBottom: 4 }}>{value}</Text>
+        <Text style={{ color: '#94a3b8', fontSize: 10 }}>{label}</Text>
+    </GlassCard>
+);
+
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: 'white' },
-
-    // 1. HEADER CURVE
-    headerCurve: {
-        height: 180,
-        backgroundColor: '#1F2937', // Dark Grey/Black theme
-        borderBottomLeftRadius: width * 0.5, // Creates the distinct curve
-        borderBottomRightRadius: width * 0.5,
-        transform: [{ scaleX: 1.2 }], // Flattens the curve slightly for that "wide" look
-        alignItems: 'center',
-        paddingTop: 50,
-        position: 'relative',
-        zIndex: 1,
-    },
-    headerTopBar: {
-        width: width / 1.2, // Counteract scaleX
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginTop: 10,
-    },
-    headerTitle: { color: 'white', fontSize: 12, fontWeight: 'bold', letterSpacing: 1.5 },
-
-    // 2. AVATAR
-    avatarWrapper: {
-        alignItems: 'center',
-        marginTop: -50,
-        zIndex: 2,
-    },
-    avatarContainer: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-        backgroundColor: '#374151',
-        borderWidth: 5,
-        borderColor: 'white',
-        alignItems: 'center',
-        justifyContent: 'center',
-        position: 'relative',
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 10,
-        elevation: 5
-    },
+    avatarContainer: { padding: 4, borderRadius: 60, borderWidth: 1, borderColor: 'rgba(34, 211, 238, 0.3)', marginBottom: 16 },
+    avatarGradient: { width: 100, height: 100, borderRadius: 50, alignItems: 'center', justifyContent: 'center' },
     avatarText: { fontSize: 32, fontWeight: 'bold', color: 'white' },
-    verifiedBadge: {
-        position: 'absolute',
-        top: 0,
-        right: 0,
-        backgroundColor: '#10B981', // Green Check
-        width: 24,
-        height: 24,
-        borderRadius: 12,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 2,
-        borderColor: 'white'
-    },
+    name: { fontSize: 24, fontWeight: 'bold', color: 'white', letterSpacing: 0.5 },
+    role: { color: '#22d3ee', fontSize: 14, marginTop: 4 },
 
-    // 3. CONTENT
-    contentContainer: { padding: 24, alignItems: 'center' },
-    name: { fontSize: 22, fontWeight: 'bold', color: '#111827', marginTop: 8 },
-    nameInput: { fontSize: 22, fontWeight: 'bold', color: '#111827', marginTop: 8, borderBottomWidth: 1, borderBottomColor: '#10B981', minWidth: 200, textAlign: 'center' },
-
-    ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, marginBottom: 24 },
-    ratingScore: { fontWeight: 'bold', color: '#111827' },
-    taskCount: { fontSize: 12, color: '#9CA3AF', marginLeft: 4 },
-
-    section: { width: '100%', marginBottom: 24 },
-    sectionLabel: { fontSize: 16, fontWeight: 'bold', color: '#111827', marginBottom: 12 },
-
-    skillsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-    skillChip: {
-        paddingVertical: 8,
-        paddingHorizontal: 16,
-        borderRadius: 8,
-        backgroundColor: 'white',
-        borderWidth: 1,
-        borderColor: '#E9D5FF', // Light Purple Border
-        shadowColor: "#7C3AED",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-        elevation: 1
-    },
-    skillText: { fontSize: 10, fontWeight: 'bold', color: '#7C3AED' }, // Purple text
-
-    aboutText: { fontSize: 14, color: '#6B7280', lineHeight: 22 },
-
-    detailsGrid: { gap: 12 },
-    detailCard: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: 16, backgroundColor: '#F9FAFB', borderRadius: 12 },
-    detailLabel: { fontSize: 12, color: '#9CA3AF' },
-    detailValue: { fontSize: 14, fontWeight: '600', color: '#1F2937' },
-
-    // BUTTON
-    actionButton: {
-        width: '100%',
-        backgroundColor: '#10B981', // The Reference Green
-        paddingVertical: 18,
-        borderRadius: 30, // Fully rounded
-        alignItems: 'center',
-        shadowColor: "#10B981",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 10,
-        elevation: 8,
-        marginBottom: 30
-    },
-    actionBtnText: { color: 'white', fontWeight: 'bold', fontSize: 16, letterSpacing: 1 }
+    row: { flexDirection: 'row', alignItems: 'center', gap: 16, paddingVertical: 12 },
+    borderBottom: { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
+    iconBox: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', justifyContent: 'center' },
+    label: { color: '#64748b', fontSize: 12 },
+    value: { color: 'white', fontSize: 14, fontWeight: '500', marginTop: 2 }
 });

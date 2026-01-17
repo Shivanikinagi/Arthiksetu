@@ -22,7 +22,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 try:
     from sms_parser import SMSParser
     from schemes import get_eligible_schemes, SCHEMES_DB
-    from gemini_service import analyze_earning_trend, verify_document_with_ai
+    from gemini_service import analyze_earning_trend, verify_document_with_ai, chat_with_ai_assistant, decode_financial_message
 except ImportError:
     pass
 
@@ -37,35 +37,34 @@ parser = SMSParser()
 
 class DashboardView(APIView):
     def get(self, request):
+        # Existing models
         income_sources = list(IncomeSource.objects.all().values())
-        earnings = list(MonthlyEarning.objects.all().values())
+        earnings_trend = list(MonthlyEarning.objects.all().values())
         
-        COLOR_MAP = {
-            'Swiggy': '#F7931E',
-            'Zomato': '#3B82F6',
-            'Freelance / Fiverr': '#1E7F5C',
-            'Cash Jobs': '#F59E0B',
-            'UPI Transfers': '#0A1F44'
-        }
+        # New: Recent Earnings from Earning model
+        from .models import Earning
+        recent_earnings = list(Earning.objects.all().order_by('-created_at')[:10].values('id', 'platform', 'amount', 'created_at'))
         
-        for source in income_sources:
-            source['color'] = COLOR_MAP.get(source['name'], '#3B82F6')
-            
+        # Calc Summary
+        total_earnings = sum(e['amount'] for e in recent_earnings) + sum(s['amount'] for s in income_sources)
+        
         # Calc Arthik Score
-        total_income = sum(s['amount'] for s in income_sources)
         verified_count = sum(1 for s in income_sources if s['verified'])
-        
-        score = 300 # Base CIBIL equivalent
-        score += min(total_income / 1000 * 5, 300) # Income Weight
-        score += (verified_count * 100) # Verification Weight
-        if len(earnings) >= 3: score += 50 # Consistency Weight
-        
+        score = 300 
+        score += min(total_earnings / 1000 * 5, 300)
+        score += (verified_count * 100)
+        if len(earnings_trend) >= 3: score += 50
         arthik_score = min(int(score), 900)
             
         return Response({
+            "status": "success",
+            "summary": {
+                "total_earnings": total_earnings,
+                "arthik_score": arthik_score
+            },
             "incomeSources": income_sources,
-            "earningsData": earnings,
-            "arthikScore": arthik_score
+            "earningsData": earnings_trend,
+            "recent_entries": recent_earnings
         })
 
 class VerifyDocumentView(APIView):
@@ -633,6 +632,52 @@ def receive_earning(request):
             "status": "error",
             "message": str(e)
         }, status=400)
+
+
+# -------------------------------------------------------------------------
+# NEW AI VIEWS
+# -------------------------------------------------------------------------
+
+class ChatbotView(APIView):
+    def post(self, request):
+        try:
+            message = request.data.get('message')
+            history = request.data.get('history', []) 
+            
+            if not message:
+                return Response({"error": "Message is required"}, status=400)
+
+            import asyncio
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                
+            response_text = loop.run_until_complete(chat_with_ai_assistant(message, history))
+            return Response({"response": response_text})
+        except Exception as e:
+            print(f"Chatbot Error: {e}")
+            return Response({"error": str(e)}, status=500)
+
+class DecoderView(APIView):
+    def post(self, request):
+        try:
+            message = request.data.get('message')
+            if not message:
+                 return Response({"error": "Message is required"}, status=400)
+            
+            import asyncio
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+
+            decoded = loop.run_until_complete(decode_financial_message(message))
+            return Response({"decoded": decoded})
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
 
 # Dashboard API endpoint for Android Studio
 @api_view(['GET'])

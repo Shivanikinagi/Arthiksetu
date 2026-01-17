@@ -1,92 +1,37 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, Image, PermissionsAndroid, Platform } from 'react-native';
-import { MessageSquare, CreditCard, ArrowRight, ShieldCheck, Banknote, Zap } from 'lucide-react-native';
+import { PermissionsAndroid, Platform, Alert, Modal, TextInput } from 'react-native';
+import SmsAndroid from 'react-native-get-sms-android';
+import api from '../api';
+import { GlassInput } from '../components/GlassComponents';
+import React, { useState } from 'react'; // Added React import
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { FileText, ArrowRight } from 'lucide-react-native';
+import { ScreenWrapper } from '../components/ScreenWrapper';
+import { GlassCard, GlassButton } from '../components/GlassComponents';
 
-// Try to import the native module safely
-let SmsAndroid: any = null;
-try {
-    if (Platform.OS === 'android') {
-        SmsAndroid = require('react-native-get-sms-android').default;
-    }
-} catch (e) {
-    console.log("SMS Module not found (likely in Expo Go).");
-}
+const MESSAGES = [
+    { sender: 'BW-HDFCBK', body: 'A/c XX1234 Credited with INR 25000.00 on 12-MAR-24. Info: SALARY.', amount: 25000, type: 'credit' },
+    { sender: 'JM-SWIGGY', body: 'Payment of INR 540.00 received for Order #8842.', amount: 540, type: 'credit' },
+    { sender: 'AX-UPI', body: 'Debited INR 200.00 for UPI Ref 8492.', amount: 200, type: 'debit' },
+];
 
-export default function SMSAnalyzerScreen() {
-    const [scanned, setScanned] = useState(false);
-    const [transactions, setTransactions] = useState<any[]>([]);
+export default function SMSAnalyzerScreen({ onBack }: { onBack?: () => void }) {
+    const [messages, setMessages] = useState<any[]>(MESSAGES);
     const [loading, setLoading] = useState(false);
+    const [manualModal, setManualModal] = useState(false);
+    const [manualText, setManualText] = useState("");
 
-    const MOCK_SMS = [
-        { id: 'm1', sender: 'HDFCBNK', body: 'Rs 12500 credited to a/c 1234. Ref: SWIGGY PAYOUT.', type: 'income', merchant: 'Swiggy', date: 'Today, 2:30 PM', amount: 12500 },
-        { id: 'm2', sender: 'ZOMATO', body: 'Rs 8400 credited to a/c 1234. Weekly Payout.', type: 'income', merchant: 'Zomato', date: 'Yesterday', amount: 8400 },
-        { id: 'm3', sender: 'AMAZON', body: 'Rs 599 debited for purchase. Balance: Rs 1500.', type: 'expense', merchant: 'Amazon', date: '12 Mar', amount: 599 },
-    ];
-
-    const parseSMS = (smsList: any[]) => {
-        const parsed: any[] = [];
-
-        smsList.forEach(sms => {
-            const body = sms.body.toLowerCase();
-            // 1. Detect Financial SMS
-            if (body.includes('credited') || body.includes('debited') || body.includes('spent') || body.includes('sent') || body.includes('received')) {
-
-                // 2. Extract Amount
-                const amountMatch = body.match(/(?:rs\.?|inr)\s*([\d,]+(?:\.\d{1,2})?)/);
-                if (amountMatch) {
-                    const amount = parseFloat(amountMatch[1].replace(/,/g, ''));
-
-                    // 3. Determine Type
-                    const isIncome = body.includes('credited') || body.includes('received');
-
-                    // 4. Extract Merchant/Source
-                    let merchant = "Generic";
-                    if (body.includes('swiggy')) merchant = "Swiggy";
-                    else if (body.includes('zomato')) merchant = "Zomato";
-                    else if (body.includes('uber')) merchant = "Uber";
-                    else if (body.includes('amazon')) merchant = "Amazon";
-                    else if (body.includes('upi')) merchant = "UPI Transfer";
-                    else merchant = sms.address || "Bank"; // Use Sender ID
-
-                    parsed.push({
-                        id: sms._id,
-                        sender: sms.address,
-                        body: sms.body,
-                        type: isIncome ? 'income' : 'expense',
-                        merchant: merchant,
-                        date: new Date(sms.date).toLocaleDateString(),
-                        amount: amount
-                    });
-                }
-            }
-        });
-        return parsed;
-    };
-
-    const runScan = async () => {
-        setLoading(true);
-
-        // 1. Check if we are in a Native Android Environment with the Module
-        const isNativeAndroid = Platform.OS === 'android' && SmsAndroid;
-
-        if (!isNativeAndroid) {
-            // --- SIMULATION MODE (Web, iOS, Expo Go) ---
-            setTimeout(() => {
-                Alert.alert("Simulation Mode", "In Expo Go/Web, we simulate the SMS scan for demo purposes.");
-                setScanned(true);
-                setTransactions(MOCK_SMS);
-                setLoading(false);
-            }, 1000);
+    const handleSync = async () => {
+        if (Platform.OS !== 'android') {
+            setManualModal(true);
             return;
         }
 
-        // --- REAL MODE (Native Android Build) ---
         try {
             const granted = await PermissionsAndroid.request(
                 PermissionsAndroid.PERMISSIONS.READ_SMS,
                 {
-                    title: "ArthikSetu SMS Permission",
-                    message: "We need access to your SMS to track your earnings automatically.",
+                    title: "SMS Permission",
+                    message: "ArthikSetu needs access to your SMS to track earnings.",
                     buttonNeutral: "Ask Me Later",
                     buttonNegative: "Cancel",
                     buttonPositive: "OK"
@@ -94,146 +39,132 @@ export default function SMSAnalyzerScreen() {
             );
 
             if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+                setLoading(true);
+                const filter = {
+                    box: 'inbox',
+                    maxCount: 50,
+                };
+
                 SmsAndroid.list(
-                    JSON.stringify({
-                        box: 'inbox',
-                        maxCount: 200,
-                    }),
+                    JSON.stringify(filter),
                     (fail: any) => {
+                        setLoading(false);
                         console.log('Failed to read SMS: ' + fail);
-                        setLoading(false);
-                        Alert.alert("Error", "Could not read SMS inbox.");
+                        Alert.alert("Error", "Could not read SMS. Try manual entry.");
+                        setManualModal(true);
                     },
-                    (count: any, smsList: string) => {
+                    async (count: any, smsList: string) => {
                         const arr = JSON.parse(smsList);
-                        const realData = parseSMS(arr);
+                        const financeKeywords = ['credited', 'debited', 'acct', 'a/c', 'upi', 'neft', 'imps', 'salary', 'received', 'sent'];
+                        const relevant = arr.filter((m: any) => financeKeywords.some(k => m.body.toLowerCase().includes(k))).map((m: any) => m.body);
 
-                        if (realData.length === 0) {
-                            Alert.alert("No Data", "No financial transactions found. Showing demo data.");
-                            setTransactions(MOCK_SMS);
-                        } else {
-                            setTransactions(realData);
+                        try {
+                            const res = await api.uploadSMS(relevant);
+                            const newMsgs = res.transactions.map((t: any) => ({
+                                sender: 'Parsed',
+                                body: t.raw.substring(0, 50) + '...',
+                                amount: t.amount,
+                                type: t.type
+                            }));
+                            setMessages(newMsgs);
+                            Alert.alert("Sync Complete", `Found ${res.transactions.length} financial transactions.`);
+                        } catch (e) {
+                            Alert.alert("Backend Error", "Could not analyze SMS.");
+                        } finally {
+                            setLoading(false);
                         }
-
-                        setScanned(true);
-                        setLoading(false);
-                    }
+                    },
                 );
             } else {
-                Alert.alert("Permission Denied", "Cannot read SMS without permission.");
-                setLoading(false);
+                setManualModal(true);
             }
         } catch (err) {
-            console.warn(err);
+            setManualModal(true);
+        }
+    };
+
+    const handleManualSubmit = async () => {
+        if (!manualText) return;
+        setLoading(true);
+        try {
+            const msgs = [manualText];
+            const res = await api.uploadSMS(msgs);
+            const newMsgs = res.transactions.map((t: any) => ({
+                sender: 'Manual',
+                body: t.raw,
+                amount: t.amount,
+                type: t.type
+            }));
+            setMessages(prev => [...newMsgs, ...prev]);
+            setManualModal(false);
+            setManualText("");
+        } catch (e) {
+            Alert.alert("Error", "Analysis failed.");
+        } finally {
             setLoading(false);
-            Alert.alert("Error", "An error occurred while scanning.");
         }
     };
 
     return (
-        <ScrollView style={styles.container}>
-            <Text style={styles.title}>Smart SMS Analyzer</Text>
-            <Text style={styles.subtitle}>AI-Powered Real-Time Tracking</Text>
+        <ScreenWrapper title="SMS Analyzer" subtitle="AUTOMATED INCOME TRACKING" showBack onBack={onBack}>
+            <View style={{ marginBottom: 20 }}>
+                <Text style={{ color: '#94a3b8', textAlign: 'center', fontSize: 12 }}>
+                    We scan transaction SMS to automate your income proof.
+                </Text>
+            </View>
 
-            {!scanned ? (
-                <View style={styles.emptyState}>
-                    <View style={styles.iconCircle}>
-                        <MessageSquare size={48} color="#2563EB" />
-                    </View>
-                    <Text style={styles.emptyTitle}>Zero-Entry Tracking</Text>
-                    <Text style={styles.emptyDesc}>
-                        Our **NLP Engine** automatically parses bank SMS to track your earnings.
-                    </Text>
-
-                    <View style={styles.featureList}>
-                        <View style={styles.featureItem}>
-                            <ShieldCheck size={16} color="#16A34A" />
-                            <Text style={styles.featureText}>Privacy First: Personal SMS ignored</Text>
+            <View style={{ gap: 12 }}>
+                {messages.map((msg, index) => (
+                    <GlassCard key={index} intensity={15} style={{ flexDirection: 'row', gap: 16 }}>
+                        <View style={[styles.iconBox, { backgroundColor: msg.type === 'credit' ? 'rgba(52, 211, 153, 0.1)' : 'rgba(248, 113, 113, 0.1)' }]}>
+                            <FileText size={20} color={msg.type === 'credit' ? '#34d399' : '#f87171'} />
                         </View>
-                        <View style={styles.featureItem}>
-                            <Zap size={16} color="#F59E0B" />
-                            <Text style={styles.featureText}>Real-Device SMS Extraction</Text>
-                        </View>
-                    </View>
-
-                    <TouchableOpacity style={styles.scanBtn} onPress={runScan}>
-                        <Text style={styles.scanBtnText}>{loading ? "Scanning Inbox..." : "Scan My SMS Inbox"}</Text>
-                        {!loading && <ArrowRight color="white" size={18} />}
-                    </TouchableOpacity>
-                </View>
-            ) : (
-                <View style={styles.resultsContainer}>
-                    <View style={styles.summaryCard}>
-                        <View>
-                            <Text style={styles.summaryLabel}>Detected Earnings</Text>
-                            <Text style={styles.summaryValue}>
-                                ₹{transactions.filter(t => t.type === 'income').reduce((sum: number, t: any) => sum + t.amount, 0).toLocaleString('en-IN')}
-                            </Text>
-                        </View>
-                        <View style={styles.summaryIcon}>
-                            <Banknote size={24} color="#16A34A" />
-                        </View>
-                    </View>
-
-                    <Text style={styles.sectionHeader}>Latest Transactions</Text>
-
-                    {transactions.map(txn => (
-                        <View key={txn.id} style={styles.txnCard}>
-                            <View style={[styles.txnIcon, { backgroundColor: txn.type === 'income' ? '#DCFCE7' : '#FEE2E2' }]}>
-                                {txn.type === 'income' ? <Banknote size={20} color="#16A34A" /> : <CreditCard size={20} color="#EF4444" />}
-                            </View>
-                            <View style={{ flex: 1 }}>
-                                <Text style={styles.txnMerchant}>{txn.merchant}</Text>
-                                <Text style={styles.txnBody} numberOfLines={1}>{txn.body}</Text>
-                            </View>
-                            <View style={{ alignItems: 'flex-end' }}>
-                                <Text style={[styles.txnAmount, { color: txn.type === 'income' ? '#16A34A' : '#EF4444' }]}>
-                                    {txn.type === 'income' ? '+' : '-'} ₹{txn.amount}
+                        <View style={{ flex: 1 }}>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                                <Text style={styles.sender}>{msg.sender}</Text>
+                                <Text style={[styles.amount, { color: msg.type === 'credit' ? '#34d399' : '#f87171' }]}>
+                                    {msg.type === 'credit' ? '+' : '-'}₹{msg.amount}
                                 </Text>
-                                <Text style={styles.txnDate}>{txn.date}</Text>
                             </View>
+                            <Text style={styles.body}>{msg.body}</Text>
                         </View>
-                    ))}
+                    </GlassCard>
+                ))}
+            </View>
 
-                    <TouchableOpacity style={styles.rescanBtn} onPress={runScan}>
-                        <Text style={styles.rescanText}>Sync New SMS</Text>
-                    </TouchableOpacity>
+            <View style={{ marginTop: 20 }}>
+                <GlassButton title={loading ? "SYNCING..." : "SYNC SMS NOW"} onPress={handleSync} disabled={loading} />
+            </View>
+
+            <Modal visible={manualModal} transparent animationType="slide">
+                <View style={styles.modalBackdrop}>
+                    <GlassCard intensity={80} style={{ padding: 24 }}>
+                        <Text style={{ color: 'white', fontSize: 18, fontWeight: 'bold', marginBottom: 12 }}>Manual Entry</Text>
+                        <Text style={{ color: '#94a3b8', marginBottom: 16 }}>We couldn't access SMS. Paste a transaction message here.</Text>
+
+                        <GlassInput
+                            value={manualText}
+                            onChangeText={setManualText}
+                            placeholder="e.g. A/c Credited with Rs 5000..."
+                            multiline
+                            numberOfLines={3}
+                        />
+
+                        <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
+                            <View style={{ flex: 1 }}><GlassButton title="CANCEL" onPress={() => setManualModal(false)} variant="secondary" /></View>
+                            <View style={{ flex: 1 }}><GlassButton title="ANALYZE" onPress={handleManualSubmit} /></View>
+                        </View>
+                    </GlassCard>
                 </View>
-            )}
-        </ScrollView>
+            </Modal>
+        </ScreenWrapper>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, padding: 24, backgroundColor: '#F8F9FA' },
-    title: { fontSize: 24, fontWeight: 'bold', color: '#0A1F44' },
-    subtitle: { color: '#6B7280', marginTop: 8, marginBottom: 32 },
-
-    emptyState: { alignItems: 'center', backgroundColor: 'white', padding: 32, borderRadius: 24, elevation: 2 },
-    iconCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
-    emptyTitle: { fontSize: 20, fontWeight: 'bold', color: '#1F2937', marginBottom: 12 },
-    emptyDesc: { textAlign: 'center', color: '#6B7280', marginBottom: 32, lineHeight: 22 },
-
-    scanBtn: { backgroundColor: '#0A1F44', flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 16, paddingHorizontal: 32, borderRadius: 12, marginBottom: 24 },
-    scanBtnText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
-    featureList: { width: '100%', marginBottom: 24, gap: 12 },
-    featureItem: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#F0FDF4', padding: 12, borderRadius: 8 },
-    featureText: { color: '#166534', fontSize: 13, fontWeight: '600' },
-
-    resultsContainer: { gap: 16 },
-    summaryCard: { backgroundColor: '#0A1F44', padding: 24, borderRadius: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-    summaryLabel: { color: '#93C5FD', fontSize: 14, marginBottom: 4 },
-    summaryValue: { color: 'white', fontSize: 32, fontWeight: 'bold' },
-    summaryIcon: { width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
-
-    sectionHeader: { fontSize: 18, fontWeight: 'bold', color: '#1F2937', marginVertical: 8 },
-    txnCard: { backgroundColor: 'white', padding: 16, borderRadius: 16, flexDirection: 'row', alignItems: 'center', gap: 16, elevation: 1 },
-    txnIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-    txnMerchant: { fontSize: 16, fontWeight: 'bold', color: '#1F2937' },
-    txnBody: { fontSize: 12, color: '#6B7280', marginTop: 2, maxWidth: 180 },
-    txnAmount: { fontSize: 16, fontWeight: 'bold' },
-    txnDate: { fontSize: 10, color: '#9CA3AF', marginTop: 4 },
-
-    rescanBtn: { marginTop: 16, alignItems: 'center', padding: 16 },
-    rescanText: { color: '#2563EB', fontWeight: 'bold' }
+    iconBox: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+    sender: { color: 'white', fontWeight: 'bold' },
+    amount: { fontWeight: 'bold' },
+    body: { color: '#94a3b8', fontSize: 12, lineHeight: 16 },
+    modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', padding: 20 }
 });

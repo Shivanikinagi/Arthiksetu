@@ -19,7 +19,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from django.http import JsonResponse
-from app.views import DashboardView, VerifyDocumentView, ParseSMSView, RecommendSchemesView, AllSchemesView, TaxCalculationView, EligibleLoansView, GenerateReportView, DownloadReportView, SendOTPView, VerifyOTPView, receive_earning, android_dashboard
+from app.views import DashboardView, VerifyDocumentView, ParseSMSView, RecommendSchemesView, AllSchemesView, TaxCalculationView, EligibleLoansView, GenerateReportView, DownloadReportView, SendOTPView, VerifyOTPView, receive_earning, android_dashboard, ChatbotView, DecoderView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -35,6 +35,8 @@ urlpatterns = [
     path('api/download_report/<str:report_id>', DownloadReportView.as_view()),
     path('api/send_otp', SendOTPView.as_view()),
     path('api/verify_otp', VerifyOTPView.as_view()),
+    path('api/chatbot', ChatbotView.as_view()),
+    path('api/decoder', DecoderView.as_view()),
     path('api/earnings/', receive_earning),  # Endpoint for Android Studio
     path('', lambda request: JsonResponse({'message': 'Backend is running'})),
 ]
