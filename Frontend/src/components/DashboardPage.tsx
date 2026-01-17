@@ -2,6 +2,7 @@ import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { CheckCircle2, AlertCircle, TrendingUp, Upload } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AIAssistant } from './AIAssistant';
 
 const earningsSources = [
   { name: 'Swiggy', amount: 12300, verified: true, color: '#F7931E' },
@@ -36,12 +37,38 @@ export function DashboardPage() {
               Aggregated from {earningsSources.length} income sources
             </p>
           </div>
-          <Button 
+          <Button
             className="bg-[#F7931E] hover:bg-[#e07d0a] text-white border-0 px-6 py-6"
           >
             <Upload className="w-4 h-4 mr-2" />
             Add Income Proof
           </Button>
+        </div>
+      </div>
+
+      {/* AI Assistant Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <Card className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100 h-full flex flex-col justify-center">
+            <div>
+              <h3 className="text-[#0A1F44] font-semibold mb-2">Smart Earnings Tracker</h3>
+              <p className="text-sm text-gray-600 mb-4 max-w-xl">
+                Use our AI-powered SMS parser to automatically extract and categorize your earnings from transaction messages.
+                Simply paste your SMS notifications in the assistant panel.
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="flex -space-x-2">
+                  <div className="w-8 h-8 rounded-full bg-orange-100 border-2 border-white flex items-center justify-center text-xs">S</div>
+                  <div className="w-8 h-8 rounded-full bg-red-100 border-2 border-white flex items-center justify-center text-xs">Z</div>
+                  <div className="w-8 h-8 rounded-full bg-blue-100 border-2 border-white flex items-center justify-center text-xs">U</div>
+                </div>
+                <span className="text-xs text-gray-500">Supported keys: Swiggy, Zomato, UPI, etc.</span>
+              </div>
+            </div>
+          </Card>
+        </div>
+        <div>
+          <AIAssistant />
         </div>
       </div>
 
@@ -53,8 +80,8 @@ export function DashboardPage() {
             <Card key={source.name} className="p-6 hover:shadow-lg transition-shadow bg-white">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <div 
-                    className="w-3 h-3 rounded-full" 
+                  <div
+                    className="w-3 h-3 rounded-full"
                     style={{ backgroundColor: source.color }}
                   />
                   <h4 className="text-gray-900">{source.name}</h4>
@@ -89,17 +116,17 @@ export function DashboardPage() {
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={monthlyData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis 
-                dataKey="month" 
+              <XAxis
+                dataKey="month"
                 stroke="#6b7280"
                 tick={{ fill: '#6b7280' }}
               />
-              <YAxis 
+              <YAxis
                 stroke="#6b7280"
                 tick={{ fill: '#6b7280' }}
                 tickFormatter={(value) => `₹${(value / 1000)}k`}
               />
-              <Tooltip 
+              <Tooltip
                 formatter={(value: number) => `₹${value.toLocaleString('en-IN')}`}
                 contentStyle={{
                   backgroundColor: 'white',
