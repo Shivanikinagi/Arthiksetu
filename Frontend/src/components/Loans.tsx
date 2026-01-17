@@ -31,7 +31,7 @@ export function Loans() {
                         Based on your monthly income of <span className="font-semibold text-[#1E7F5C]">₹{userIncome.toLocaleString('en-IN')}</span>
                     </p>
                 </div>
-                
+
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -62,7 +62,13 @@ export function Loans() {
 
                             <Button
                                 className="w-full bg-[#3B82F6] hover:bg-[#2563eb] text-white"
-                                onClick={() => alert(`Application for ${loan.lender} Submitted Successfully!`)}
+                                onClick={() => {
+                                    if (loan.link) {
+                                        window.open(loan.link, '_blank');
+                                    } else {
+                                        alert(`Application for ${loan.lender} Submitted Successfully!`);
+                                    }
+                                }}
                             >
                                 Apply Now <ChevronRight className="w-4 h-4 ml-1" />
                             </Button>
