@@ -19,10 +19,14 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from django.http import JsonResponse
-from app.views import DashboardView
+from app.views import DashboardView, VerifyDocumentView, ParseSMSView, RecommendSchemesView, AllSchemesView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/dashboard/', DashboardView.as_view()),
+    path('api/dashboard', DashboardView.as_view()), # Remove trailing slash
+    path('api/verify_document', VerifyDocumentView.as_view()),
+    path('api/parse_sms', ParseSMSView.as_view()),
+    path('api/recommend_schemes', RecommendSchemesView.as_view()),
+    path('api/all_schemes', AllSchemesView.as_view()),
     path('', lambda request: JsonResponse({'message': 'Backend is running'})),
 ]

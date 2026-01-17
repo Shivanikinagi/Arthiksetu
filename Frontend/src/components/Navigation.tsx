@@ -1,8 +1,8 @@
-import { Building2, FileText, Gift, BarChart3, User } from 'lucide-react';
+import { Building2, FileText, Gift, BarChart3, User, Bot } from 'lucide-react';
 
 interface NavigationProps {
-  currentPage: 'dashboard' | 'tax' | 'schemes' | 'reports' | 'profile';
-  onNavigate: (page: 'dashboard' | 'tax' | 'schemes' | 'reports' | 'profile') => void;
+  currentPage: 'dashboard' | 'tax' | 'schemes' | 'reports' | 'profile' | 'ai-assistant';
+  onNavigate: (page: 'dashboard' | 'tax' | 'schemes' | 'reports' | 'profile' | 'ai-assistant') => void;
 }
 
 export function Navigation({ currentPage, onNavigate }: NavigationProps) {
@@ -12,6 +12,7 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
     { id: 'schemes' as const, label: 'Govt Schemes', icon: Gift },
     { id: 'reports' as const, label: 'Reports', icon: BarChart3 },
     { id: 'profile' as const, label: 'Profile', icon: User },
+    { id: 'ai-assistant' as const, label: 'AI Assistant', icon: Bot },
   ];
 
   return (
@@ -38,11 +39,10 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
                 <button
                   key={item.id}
                   onClick={() => onNavigate(item.id)}
-                  className={`px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors ${
-                    isActive
+                  className={`px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors ${isActive
                       ? 'bg-[#0A1F44] text-white'
                       : 'text-gray-600 hover:bg-gray-100'
-                  }`}
+                    }`}
                 >
                   <Icon className="w-4 h-4" />
                   <span>{item.label}</span>
@@ -70,11 +70,10 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
               <button
                 key={item.id}
                 onClick={() => onNavigate(item.id)}
-                className={`px-3 py-2 rounded-lg flex items-center space-x-2 whitespace-nowrap transition-colors ${
-                  isActive
+                className={`px-3 py-2 rounded-lg flex items-center space-x-2 whitespace-nowrap transition-colors ${isActive
                     ? 'bg-[#0A1F44] text-white'
                     : 'text-gray-600 hover:bg-gray-100'
-                }`}
+                  }`}
               >
                 <Icon className="w-4 h-4" />
                 <span className="text-sm">{item.label}</span>

@@ -5,8 +5,9 @@ import { TaxPage } from './components/TaxPage';
 import { SchemesPage } from './components/SchemesPage';
 import { ReportsPage } from './components/ReportsPage';
 import { ProfilePage } from './components/ProfilePage';
+import { AIAssistantPage } from './components/AIAssistantPage';
 
-type PageType = 'dashboard' | 'tax' | 'schemes' | 'reports' | 'profile' | 'about' | 'how-it-works' | 'privacy' | 'terms' | 'help' | 'contact' | 'faq';
+type PageType = 'dashboard' | 'tax' | 'schemes' | 'reports' | 'profile' | 'ai-assistant' | 'about' | 'how-it-works' | 'privacy' | 'terms' | 'help' | 'contact' | 'faq';
 
 const StaticPage = ({ title, content }: { title: string; content: React.ReactNode }) => (
   <div className="max-w-4xl mx-auto px-4 py-12">
@@ -32,6 +33,8 @@ export default function App() {
         return <ReportsPage />;
       case 'profile':
         return <ProfilePage />;
+      case 'ai-assistant':
+        return <AIAssistantPage />;
       case 'about':
         return <StaticPage title="About Us" content="ArthikSetu is a pioneering platform dedicated to empowering India's gig economy workers. We bridge the gap between hard work and financial stability by providing a unified interface for earnings tracking, tax management, and access to government benefits. Our mission is to financial inclusion for every independent worker." />;
       case 'how-it-works':
@@ -54,8 +57,8 @@ export default function App() {
           <div>
             <p className="mb-4">We'd love to hear from you. Reach out to us through any of the following channels:</p>
             <p><strong>Email:</strong> support@arthiksetu.in</p>
-            <p><strong>Phone:</strong> 1800-123-4567</p>
-            <p><strong>Address:</strong> Tech Hub, Cyber City, Gurugram, India</p>
+            <p><strong>Phone:</strong> xxxx-xxx-xxx</p>
+            <p><strong>Address:</strong> ArthikSetu HQ, Baner Road, Pune, Maharashtra 411045</p>
           </div>
         } />;
       case 'faq':
@@ -118,7 +121,7 @@ export default function App() {
                 <li><button onClick={() => setCurrentPage('faq')} className="hover:text-[#0A1F44]">FAQs</button></li>
                 <li className="flex items-center gap-2">
                   <span>Helpline:</span>
-                  <a href="tel:18001234567" className="text-[#0A1F44] font-medium hover:underline">1800-123-4567</a>
+                  <a href="tel:18001234567" className="text-[#0A1F44] font-medium hover:underline">xxxx-xxx-xxxx</a>
                 </li>
               </ul>
             </div>
