@@ -1,9 +1,10 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
 from typing import List, Optional
 from sms_parser import SMSParser
 from schemes import get_eligible_schemes, SCHEMES_DB
 from fastapi.middleware.cors import CORSMiddleware
+import asyncio
 
 app = FastAPI(title="ArthikSetu AI Backend")
 
@@ -30,6 +31,29 @@ class UserProfile(BaseModel):
 @app.get("/")
 def read_root():
     return {"message": "ArthikSetu AI Backend is Running"}
+
+@app.post("/api/verify_document")
+async def verify_document(file: UploadFile = File(...), doc_type: str = Form(...)):
+    """
+    Simulates AI verification of uploaded documents.
+    """
+    try:
+        # Simulate processing delay
+        await asyncio.sleep(2)
+        
+        # In a real app, we would:
+        # 1. Save the file temporarily
+        # 2. Run OCR/Extraction (using Tesseract or Gemini Vision)
+        # 3. Validate extracted data against expected patterns
+        
+        return {
+            "status": "verified",
+            "doc_type": doc_type,
+            "message": f"{doc_type} verified successfully",
+            "confidence_score": 0.98
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/parse_sms")
 def parse_sms_endpoint(request: SMSRequest):

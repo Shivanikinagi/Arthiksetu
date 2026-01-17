@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
-import { User, Phone, Mail, MapPin, Calendar, Shield, CheckCircle } from 'lucide-react';
+import { User, Phone, Mail, MapPin, Calendar, Shield, CheckCircle, Loader2, Upload } from 'lucide-react';
 
 export function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
@@ -11,6 +11,68 @@ export function ProfilePage() {
     location: 'Mumbai, Maharashtra',
     dob: '15 August 1990'
   });
+
+  const [verificationStatus, setVerificationStatus] = useState<Record<string, string>>({
+    'Aadhaar': 'unverified',
+    'PAN Card': 'unverified',
+    'Bank Account': 'unverified',
+    'Phone Number': 'unverified',
+    'Email Address': 'unverified',
+  });
+
+  const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
+  const docInputRef = useRef<HTMLInputElement>(null);
+
+  const handleVerifyClick = (docName: string) => {
+    if (docName === 'Phone Number' || docName === 'Email Address') {
+      setVerificationStatus(prev => ({ ...prev, [docName]: 'verifying' }));
+
+      // Simulate OTP Verification
+      setTimeout(() => {
+        setVerificationStatus(prev => ({ ...prev, [docName]: 'verified' }));
+        alert(`${docName} verified successfully via OTP!`);
+      }, 2000);
+      return;
+    }
+
+    setUploadingDoc(docName);
+    docInputRef.current?.click();
+  };
+
+  const handleDocUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && uploadingDoc) {
+      // Set status to verifying
+      setVerificationStatus(prev => ({ ...prev, [uploadingDoc]: 'verifying' }));
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('doc_type', uploadingDoc);
+
+      try {
+        const response = await fetch('http://localhost:8000/api/verify_document', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setVerificationStatus(prev => ({ ...prev, [uploadingDoc]: 'verified' }));
+          alert(data.message);
+        } else {
+          setVerificationStatus(prev => ({ ...prev, [uploadingDoc]: 'unverified' }));
+          alert("Verification failed. Please try again.");
+        }
+      } catch (error) {
+        console.error("Verification error:", error);
+        setVerificationStatus(prev => ({ ...prev, [uploadingDoc]: 'unverified' }));
+        alert("Verification error. Check backend connection.");
+      }
+
+      setUploadingDoc(null);
+      if (docInputRef.current) docInputRef.current.value = '';
+    }
+  };
 
   const handleSave = () => {
     setIsEditing(false);
@@ -118,27 +180,54 @@ export function ProfilePage() {
       </Card>
 
       <Card className="p-6 bg-white">
-        <h3 className="text-[#0A1F44] mb-6">Verification Status</h3>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-[#0A1F44]">Verification Status</h3>
+          <input
+            type="file"
+            ref={docInputRef}
+            className="hidden"
+            onChange={handleDocUpload}
+            accept=".pdf,.jpg,.jpeg,.png"
+            style={{ display: 'none' }}
+          />
+        </div>
+
         <div className="space-y-4">
-          {[
-            { name: 'Aadhaar', status: true },
-            { name: 'PAN Card', status: true },
-            { name: 'Bank Account', status: true },
-            { name: 'Phone Number', status: true },
-            { name: 'Email Address', status: true },
-          ].map((item) => (
+          {Object.entries(verificationStatus).map(([docName, status]) => (
             <div
-              key={item.name}
+              key={docName}
               className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
             >
               <div className="flex items-center gap-3">
-                <Shield className="w-5 h-5 text-[#1E7F5C]" />
-                <span className="text-[#0A1F44]">{item.name}</span>
+                <Shield className={`w-5 h-5 ${status === 'verified' ? 'text-[#1E7F5C]' : 'text-gray-400'}`} />
+                <span className="text-[#0A1F44]">{docName}</span>
               </div>
-              <span className="px-3 py-1 bg-[#1E7F5C] text-white text-sm rounded-full flex items-center gap-1">
-                <CheckCircle className="w-4 h-4" />
-                Verified
-              </span>
+
+              {status === 'verified' && (
+                <span className="px-3 py-1 bg-[#1E7F5C] text-white text-sm rounded-full flex items-center gap-1">
+                  <CheckCircle className="w-4 h-4" />
+                  Verified
+                </span>
+              )}
+
+              {status === 'verifying' && (
+                <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-full flex items-center gap-1">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Verifying...
+                </span>
+              )}
+
+              {status === 'unverified' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-[#F7931E] text-[#F7931E] hover:bg-[#F7931E] hover:text-white"
+                  onClick={() => handleVerifyClick(docName)}
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Verify Now
+                </Button>
+              )}
             </div>
           ))}
         </div>
