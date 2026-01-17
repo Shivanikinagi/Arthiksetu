@@ -94,6 +94,20 @@ SCHEMES_DB = [
     "category": "Business",
     "url": "https://www.standupmitra.in/"
   },
+  {
+    "id": 7,
+    "name": "Ayushman Bharat",
+    "description": "Pradhan Mantri Jan Arogya Yojana",
+    "benefit": "₹5 Lakh Health Cover",
+    "eligibleAmount": 500000,
+    "status": "eligible",
+    "details": "Health insurance for low-income families",
+    "criteria": {
+        "max_income": 500000
+    },
+    "category": "Insurance",
+    "url": "https://pmjay.gov.in/"
+  },
 ]
 
 def check_eligibility(scheme, profile):
@@ -111,8 +125,9 @@ def check_eligibility(scheme, profile):
         if not any(tag in user_occ for tag in criteria["occupation_tags"]):
             return False
             
-    # Income Check
+    # Income Check (Annual)
     if "max_income" in criteria and profile.get("income"):
+        # print(f"Checking income: User {profile['income']} vs Max {criteria['max_income']}")
         if profile["income"] > criteria["max_income"]:
             return False
 
@@ -131,9 +146,11 @@ def get_eligible_schemes(user_profile):
     """
     eligible = []
     for scheme in SCHEMES_DB:
+        s = scheme.copy()
         if check_eligibility(scheme, user_profile):
-            # Create a copy and mark status
-            s = scheme.copy()
             s['status'] = 'eligible'
-            eligible.append(s)
+        else:
+            s['status'] = 'ineligible'
+            
+        eligible.append(s)
     return eligible

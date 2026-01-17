@@ -13,7 +13,7 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
     { id: 'loans' as const, label: 'Loans', icon: Landmark },
     { id: 'reports' as const, label: 'Reports', icon: BarChart3 },
     { id: 'profile' as const, label: 'Profile', icon: User },
-    { id: 'ai-assistant' as const, label: 'AI Assistant', icon: Bot },
+    { id: 'ai-assistant' as const, label: 'AI Analyzer', icon: Bot },
   ];
 
   return (

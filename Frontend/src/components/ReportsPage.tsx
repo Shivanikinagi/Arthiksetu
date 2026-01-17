@@ -67,7 +67,11 @@ export function ReportsPage() {
                 className="border-[#0A1F44] text-[#0A1F44] hover:bg-[#0A1F44] hover:text-white"
                 onClick={() => {
                   const fileName = report.name.replace(/\s+/g, '_').toLowerCase();
-                  alert(`Downloading ${fileName}.pdf...`);
+                  if (report.name.includes("Annual Income Report")) {
+                    window.open('http://localhost:8000/api/generate_report', '_blank');
+                  } else {
+                    alert(`Downloading ${fileName}.pdf...`);
+                  }
                 }}
               >
                 <Download className="w-4 h-4 mr-2" />

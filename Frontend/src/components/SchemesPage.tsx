@@ -16,24 +16,30 @@ export function SchemesPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // simulating a user profile for recommendation
-    const userProfile = {
-      age: 28,
-      income: 180000,
-      occupation: "food delivery",
-      category: "General"
-    };
+    // 1. Fetch real income first
+    fetch('http://localhost:8000/api/dashboard')
+      .then(res => res.json())
+      .then(dashboardData => {
+        const sources = dashboardData.incomeSources || [];
+        const monthlyTotal = sources.reduce((sum: number, s: any) => sum + s.amount, 0);
+        const annualIncome = monthlyTotal * 12;
 
-    fetch('http://localhost:8000/api/recommend_schemes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(userProfile)
-    })
+        const userProfile = {
+          age: 28, // Still static for now as we don't have a profile form
+          income: annualIncome,
+          occupation: "food delivery",
+          category: "General"
+        };
+
+        // 2. Fetch schemes based on real income
+        return fetch('http://localhost:8000/api/recommend_schemes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(userProfile)
+        });
+      })
       .then(res => res.json())
       .then(data => {
-        // The backend returns eligible schemes.
-        // We can also append some "pending" ones manually or fetch all if we wanted.
-        // For now, let's show what the AI recommends.
         const formatted = data.schemes.map((s: any) => ({
           ...s,
           icon: ICON_MAP[s.category === 'Loan' ? 'Gift' : s.category === 'Insurance' ? 'Shield' : 'TrendingUp'] || Gift,
@@ -56,10 +62,58 @@ export function SchemesPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-[#0A1F44] mb-2">Government Benefits You Qualify For</h1>
-        <p className="text-gray-600">
-          Based on your verified income and profile, you're eligible for these government schemes
-        </p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-[#0A1F44] mb-2">Government Benefits You Qualify For</h1>
+            <p className="text-gray-600">
+              Based on your verified income and profile, you're eligible for these government schemes
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setLoading(true);
+              // Re-run the fetch logic
+              fetch('http://localhost:8000/api/dashboard')
+                .then(res => res.json())
+                .then(dashboardData => {
+                  const sources = dashboardData.incomeSources || [];
+                  const monthlyTotal = sources.reduce((sum: number, s: any) => sum + s.amount, 0);
+                  const annualIncome = monthlyTotal * 12;
+
+                  const userProfile = {
+                    age: 28,
+                    income: annualIncome,
+                    occupation: "food delivery",
+                    category: "General"
+                  };
+
+                  return fetch('http://localhost:8000/api/recommend_schemes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(userProfile)
+                  });
+                })
+                .then(res => res.json())
+                .then(data => {
+                  const formatted = data.schemes.map((s: any) => ({
+                    ...s,
+                    icon: ICON_MAP[s.category === 'Loan' ? 'Gift' : s.category === 'Insurance' ? 'Shield' : 'TrendingUp'] || Gift,
+                    color: s.category === 'Loan' ? '#1E7F5C' : '#3B82F6'
+                  }));
+                  formatted.sort((a: any, b: any) => (a.status === 'eligible' ? -1 : 1));
+                  setSchemes(formatted);
+                  setLoading(false);
+                })
+                .catch(err => {
+                  console.error("Failed to fetch schemes", err);
+                  setLoading(false);
+                });
+            }}
+          >
+            Refresh Schemes
+          </Button>
+        </div>
       </div>
 
       {/* Highlight Banner */}

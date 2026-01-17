@@ -6,7 +6,7 @@ import { SchemesPage } from './components/SchemesPage';
 import { ReportsPage } from './components/ReportsPage';
 import { ProfilePage } from './components/ProfilePage';
 import { AIAssistantPage } from './components/AIAssistantPage';
-import Loans from './components/Loans';
+import { Loans } from './components/Loans';
 
 type PageType = 'dashboard' | 'tax' | 'schemes' | 'loans' | 'reports' | 'profile' | 'ai-assistant' | 'about' | 'how-it-works' | 'privacy' | 'terms' | 'help' | 'contact' | 'faq';
 

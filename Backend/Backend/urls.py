@@ -19,7 +19,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from django.http import JsonResponse
-from app.views import DashboardView, VerifyDocumentView, ParseSMSView, RecommendSchemesView, AllSchemesView
+from app.views import DashboardView, VerifyDocumentView, ParseSMSView, RecommendSchemesView, AllSchemesView, TaxCalculationView, EligibleLoansView, GenerateReportView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -28,5 +28,8 @@ urlpatterns = [
     path('api/parse_sms', ParseSMSView.as_view()),
     path('api/recommend_schemes', RecommendSchemesView.as_view()),
     path('api/all_schemes', AllSchemesView.as_view()),
+    path('api/tax_calculation', TaxCalculationView.as_view()),
+    path('api/loans', EligibleLoansView.as_view()),
+    path('api/generate_report', GenerateReportView.as_view()),
     path('', lambda request: JsonResponse({'message': 'Backend is running'})),
 ]

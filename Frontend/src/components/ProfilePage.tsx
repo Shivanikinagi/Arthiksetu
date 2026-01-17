@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { User, Phone, Mail, MapPin, Calendar, Shield, CheckCircle, Loader2, Upload } from 'lucide-react';

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ArthikSetu</string>
+    <string name="title_activity_main">ArthikSetu</string>
+    <string name="package_name">com.arthiksetu.app</string>
+    <string name="custom_url_scheme">com.arthiksetu.app</string>
+</resources>

@@ -14,10 +14,6 @@ export function DashboardPage() {
     fetch('http://localhost:8000/api/dashboard')
       .then(res => res.json())
       .then(data => {
-        // Map backend fields to frontend expected format if necessary
-        // Assuming backend returns matching keys or we adapt here.
-        // If DB is empty, we might want to show empty state or fallback?
-        // For now, simple set.
         setIncomeSources(data.incomeSources || []);
         setMonthlyData(data.earningsData || []);
         setLoading(false);
@@ -30,10 +26,39 @@ export function DashboardPage() {
 
   const totalEarnings = incomeSources.reduce((sum, source) => sum + source.amount, 0);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      alert(`Income proof uploaded successfully: ${file.name}`);
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('doc_type', 'Income Proof'); // Tag as income proof
+
+      try {
+        setLoading(true);
+        const response = await fetch('http://localhost:8000/api/verify_document', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          // In a real app, this would likely trigger a re-fetch or state update
+          // For now, we simulate a successful "Add" by showing a success message
+          alert(`Success: ${result.message}`);
+
+          // Optional: Reload dashboard data if backend updated anything
+          // fetchDashboardData(); 
+        } else {
+          alert("Upload failed. Please try again.");
+        }
+      } catch (error) {
+        console.error("Upload error:", error);
+        alert("An error occurred during upload.");
+      } finally {
+        setLoading(false);
+        // Reset input
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
     }
   };
 
@@ -166,7 +191,22 @@ export function DashboardPage() {
         </Card>
         <Card className="p-6 bg-white border-l-4 border-l-[#F7931E]">
           <p className="text-sm text-gray-600 mb-1">Growth (vs Last Month)</p>
-          <p className="text-3xl text-[#1E7F5C]">+5.2%</p>
+          <p className={`text-3xl ${(() => {
+            if (monthlyData.length < 2) return 'text-gray-600';
+            const lastMonth = monthlyData[monthlyData.length - 1].amount;
+            const prevMonth = monthlyData[monthlyData.length - 2].amount;
+            const growth = ((lastMonth - prevMonth) / prevMonth) * 100;
+            return growth >= 0 ? 'text-[#1E7F5C]' : 'text-red-500';
+          })()
+            }`}>
+            {(() => {
+              if (monthlyData.length < 2) return 'N/A';
+              const lastMonth = monthlyData[monthlyData.length - 1].amount;
+              const prevMonth = monthlyData[monthlyData.length - 2].amount;
+              const growth = ((lastMonth - prevMonth) / prevMonth) * 100;
+              return `${growth > 0 ? '+' : ''}${growth.toFixed(1)}%`;
+            })()}
+          </p>
         </Card>
       </div>
     </div>

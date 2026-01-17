@@ -1,3 +1,7 @@
+import { useState, useEffect } from 'react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Shield, FileText, Download, CheckCircle, Info } from 'lucide-react';
@@ -27,11 +31,101 @@ const taxDeductions = [
 ];
 
 export function TaxPage() {
-  const annualIncome = 585000; // 48,750 * 12
-  const taxPayable = 0;
-  const refundEligible = 8500;
+  const [totalAnnualEarnings, setTotalAnnualEarnings] = useState(0);
+  const [taxPayable, setTaxPayable] = useState(0);
+  const [refundEligible, setRefundEligible] = useState(0);
+  const [incomeSources, setIncomeSources] = useState<any[]>([]);
+
+  useEffect(() => {
+    // Fetch calculated tax data from backend
+    fetch('http://localhost:8000/api/tax_calculation')
+      .then(res => res.json())
+      .then(data => {
+        setTotalAnnualEarnings(data.annual_income);
+        setTaxPayable(data.tax_payable);
+        setRefundEligible(data.refund_eligible);
+      })
+      .catch(err => console.error("Failed to fetch tax calculations", err));
+
+    // Fetch income sources for PDF
+    fetch('http://localhost:8000/api/dashboard')
+      .then(res => res.json())
+      .then(data => {
+        setIncomeSources(data.incomeSources || []);
+      })
+      .catch(err => console.error("Failed to fetch sources", err));
+  }, []);
+
+  const annualIncome = totalAnnualEarnings;
   const totalDeductions = taxDeductions.reduce((sum, d) => sum + d.currentAmount, 0);
   const totalSavings = taxDeductions.reduce((sum, d) => sum + d.savings, 0);
+
+  const downloadPDF = () => {
+    const doc = new jsPDF();
+
+    // Header Color
+    doc.setFillColor(10, 31, 68); // #0A1F44
+    doc.rect(0, 0, 210, 40, 'F');
+
+    // Title
+    doc.setFontSize(22);
+    doc.setTextColor(255, 255, 255);
+    doc.text("ArthikSetu", 14, 20);
+
+    doc.setFontSize(14);
+    doc.text("Income Passport", 14, 28);
+
+    doc.setFontSize(10);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 160, 25);
+    doc.text("Verified Document", 160, 30);
+
+    // Reset Text Color
+    doc.setTextColor(0, 0, 0);
+
+    // Summary Section
+    doc.setFontSize(16);
+    doc.text("Financial Summary (Annual)", 14, 55);
+
+    autoTable(doc, {
+      startY: 60,
+      head: [['Metric', 'Amount']],
+      body: [
+        ['Estimated Annual Earnings', `Rs. ${annualIncome.toLocaleString('en-IN')}`],
+        ['Tax Payable', `Rs. ${taxPayable.toLocaleString('en-IN')}`],
+        ['Refund Eligible', `Rs. ${refundEligible.toLocaleString('en-IN')}`],
+      ],
+      theme: 'grid',
+      headStyles: { fillColor: [10, 31, 68] },
+    });
+
+    // Income Sources Detail
+    const finalY = (doc as any).lastAutoTable.finalY || 100;
+
+    doc.text("Verified Income Sources (Monthly)", 14, finalY + 15);
+
+    const sourceRows = incomeSources.map(s => [
+      s.name,
+      `Rs. ${s.amount.toLocaleString('en-IN')}`,
+      s.verified ? 'Verified' : 'Pending'
+    ]);
+
+    autoTable(doc, {
+      startY: finalY + 20,
+      head: [['Source', 'Monthly Amount', 'Status']],
+      body: sourceRows,
+      theme: 'striped',
+      headStyles: { fillColor: [30, 127, 92] }, // Greenish
+    });
+
+    // Footer
+    const pageHeight = doc.internal.pageSize.height;
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text("ArthikSetu - Empowering Gig Workers", 14, pageHeight - 10);
+    doc.text("This document is computer generated and valid for banking purposes.", 14, pageHeight - 5);
+
+    doc.save("Income_Passport_Verified_2024.pdf");
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -184,10 +278,7 @@ export function TaxPage() {
         </Button>
         <Button
           variant="outline"
-          onClick={() => {
-            const fileName = "Income_Passport_Verified_2024.pdf";
-            alert(`Downloading ${fileName}...`);
-          }}
+          onClick={downloadPDF}
           className="flex-1 border-2 border-[#0A1F44] text-[#0A1F44] hover:bg-[#0A1F44] hover:text-white py-6"
         >
           <Download className="w-5 h-5 mr-2" />
