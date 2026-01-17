@@ -62,7 +62,7 @@ export function DashboardPage() {
                   <div className="w-8 h-8 rounded-full bg-red-100 border-2 border-white flex items-center justify-center text-xs">Z</div>
                   <div className="w-8 h-8 rounded-full bg-blue-100 border-2 border-white flex items-center justify-center text-xs">U</div>
                 </div>
-                <span className="text-xs text-gray-500">Supported keys: Swiggy, Zomato, UPI, etc.</span>
+                <span className="text-xs text-gray-500">Supported: Zomato, Swiggy, Zepto, Blinkit, Uber, Ola.</span>
               </div>
             </div>
           </Card>

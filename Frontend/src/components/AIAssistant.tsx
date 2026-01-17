@@ -12,8 +12,12 @@ export function AIAssistant() {
         if (!input.trim()) return;
         setLoading(true);
         try {
-            // Split by newlines for batch processing
-            const messages = input.split('\n').filter(line => line.trim().length > 0);
+            // Split by double newlines (paragraphs) to separate distinct messages
+            // Then join single newlines with spaces to handle wrapped text within a message
+            const messages = input
+                .split(/\n\s*\n/)
+                .map((msg: string) => msg.replace(/\n/g, ' ').trim())
+                .filter((msg: string) => msg.length > 0);
 
             const response = await fetch('http://localhost:8000/api/parse_sms', {
                 method: 'POST',
