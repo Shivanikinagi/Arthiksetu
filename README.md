@@ -1,75 +1,92 @@
-# ArthikSetu - Financial Bridge for Gig Workers
+# ArthikSetu - Empowering India's Gig Economy 🇮🇳
 
-ArthikSetu is a comprehensive financial wellness platform designed for India's gig economy workers. It provides unified earnings tracking, AI-powered insights, and access to government schemes.
+![ArthikSetu Banner](https://via.placeholder.com/1200x400/0A1F44/ffffff?text=ArthikSetu+Financial+Bridge)
 
-## Features
+**ArthikSetu** is a comprehensive financial wellness platform tailored for the unique needs of India's 15M+ gig workers. We bridge the gap between hard work and financial stability by providing a unified interface for earnings tracking, simplified financial insights, and direct access to eligible government schemes.
 
-*   **Unified Earnings Dashboard**: Aggregates income from platforms like Swiggy, Zomato, Uber, etc.
-*   **Smart SMS Analyzer**: AI-based tool to parse transaction SMS and track income automatically.
-*   **AI Chatbot Assistant**: Conversational interface for financial queries and advice.
-*   **Financial Message Decoder**: Translates confusing bank messages into simple language.
-*   **Document Verification**: AI-powered verification for Aadhaar, PAN, and other IDs.
-*   **Government Schemes**: Smart recommendation engine for eligible government benefits.
-*   **Income Risk Prediction**: Predicts potential low-earning periods based on historical data.
-*   **Reports**: Generate audit-safe financial reports.
+## 🚀 Key Features
 
-## Project Structure
+### 📊 1. Unified Earnings Dashboard
+*   **One-View Financials**: Aggregates income across multiple platforms (Swiggy, Zomato, Uber, Blinkit).
+*   **Income Stability Score**: Proprietary AI score to measure financial health.
+*   **Trend Analysis**: Visualizes daily, weekly, and monthly earning trends to identify peak periods.
 
-*   `Backend/`: Python (FastAPI + Django) backend.
-    *   `main.py`: Primary entry point for AI features and API.
-    *   `gemini_service.py`: Google Gemini AI integration.
-*   `Frontend/`: React (Vite) frontend.
-    *   `src/components/`: Reusable UI components and Feature pages.
+### 🤖 2. Smart SMS Analyzer (AI-Powered)
+*   **Zero-Entry Tracking**: Uses NLP (Natural Language Processing) to parse transaction SMS notifications automatically.
+*   **Merchant categorization**: Smartly identifies sources like "Swiggy Credit" vs "Personal Transfer".
+*   **Privacy First**: Runs purely on transaction text, isolating personal messages.
 
-## Setup Instructions
+### 💬 3. AI Earnings Assistant
+*   **24/7 Financial Guide**: A conversational chatbot (Hinglish supported) for queries like *"How can I save tax on 5 Lakh income?"*.
+*   **Personalized Tips**: Gives actionable advice based on realtime earning data.
+
+### 🔍 4. Scheme Recommender & Simplifier
+*   **Eligibility Engine**: Matches worker profile (Age, Income, Occupation) with 100+ Central & State schemes.
+*   **Jargon Buster**: Simplifies complex government circulars into 2-line easy explanations.
+
+### 📜 5. Financial Message Decoder
+*   **Bank-to-Human Translator**: Translates confusing banking SMS (e.g., "Amount Lien marked...") into simple language.
+
+### 🆔 6. Instant Document Verification
+*   **Vision AI**: Verifies KYC documents (Aadhaar, PAN, DL) instantly using computer vision.
+*   **Fraud Detection**: Checks for document validity and consistency.
+
+---
+
+## 🛠️ Technology Stack
+
+*   **Frontend**: React.js (Vite), TypeScript, TailwindCSS, Lucide Icons, Recharts
+*   **Backend**: Python (FastAPI), Google Gemini 2.5 Flash (LLM), Pydantic
+*   **AI/ML**: Google Generative AI (NLP & Vision)
+
+---
+
+## ⚙️ Quick Start Guide
 
 ### Prerequisites
-*   Python 3.10+
-*   Node.js 18+
+*   Node.js (v18+)
+*   Python (v3.10+)
 
-### 1. Backend Setup
-Navigate to the Backend directory:
+### 1️⃣ Clone the Repository
 ```bash
-cd Arthiksetu/Backend
+git clone https://github.com/Shivanikinagi/Arthiksetu.git
+cd Arthiksetu
 ```
 
-Install dependencies:
+### 2️⃣ Automatic Setup (Windows)
+Simply double-click the `start_app.bat` file in the root directory. This will:
+1.  Install Python dependencies.
+2.  Install Node.js dependencies.
+3.  Launch both Backend and Frontend servers.
+
+### 3️⃣ Manual Setup
+
+**Backend:**
 ```bash
+cd Backend
 pip install -r requirements.txt
+uvicorn main:app --reload
 ```
 
-Run the API server:
+**Frontend:**
 ```bash
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
-```
-The API will be available at `http://localhost:8000`.
-
-### 2. Frontend Setup
-Open a new terminal and navigate to the Frontend directory:
-```bash
-cd Arthiksetu/Frontend
-```
-
-Install dependencies:
-```bash
+cd Frontend
 npm install
-```
-
-Run the development server:
-```bash
 npm run dev
 ```
 
-Open your browser and visit the URL shown (usually `http://localhost:5173`).
+---
 
-## Usage
-1.  **Dashboard**: View your aggregated income.
-2.  **SMS Analyzer**: Paste transaction SMS to test the AI parser.
-3.  **Chatbot**: Ask questions like "How can I save tax?".
-4.  **Schemes**: View schemes you are eligible for (based on verified income).
-5.  **Decoder**: Paste a bank SMS to understand it.
-6.  **Verify**: Upload a dummy ID image to test verification.
+## 📸 Screenshots
 
-## Notes
-*   This is a demo version. Data is mocked or stored in-memory for some features to facilitate easy testing without a full database setup.
-*   The AI features utilize Google Gemini API.
+| Dashboard | Chatbot |
+|:---:|:---:|
+| *(Add Dashboard Screenshot)* | *(Add Chatbot Screenshot)* |
+
+---
+
+## 🤝 Contribution
+Contributions are welcome! Please fork the repository and create a pull request for any feature enhancements.
+
+## 📄 License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
