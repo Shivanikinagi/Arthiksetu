@@ -1,168 +1,127 @@
-import { Gift, TrendingUp, Shield, ExternalLink, AlertCircle } from "lucide-react";
+import {
+  Bank,
+  CheckCircle,
+  AlertCircle,
+  ExternalLink
+} from "lucide-react";
 
-const schemes = [
+const loans = [
   {
-    name: 'PM-SVANidhi',
-    description: 'Working Capital Loan for Street Vendors',
-    benefit: '₹10,000',
-    benefitType: 'Loan Amount',
-    eligible: true,
-    category: 'Financial Support',
-    icon: Gift,
-    details: 'Low-interest loan with digital transaction incentives',
+    lender: "HDFC Bank",
+    amount: "Up to ₹40,00,000",
+    interest: "10.75% onwards",
+    status: "Eligible",
   },
   {
-    name: 'Atal Pension Yojana',
-    description: 'Guaranteed Pension for Unorganized Workers',
-    benefit: '₹3,000/month',
-    benefitType: 'Monthly Pension (at 60)',
-    eligible: true,
-    category: 'Pension',
-    icon: TrendingUp,
-    details: 'Secure your retirement with government-backed pension',
+    lender: "Axis Bank",
+    amount: "Up to ₹40,00,000",
+    interest: "10.49% onwards",
+    status: "Eligible",
   },
   {
-    name: 'PMJJBY',
-    description: 'Pradhan Mantri Jeevan Jyoti Bima Yojana',
-    benefit: '₹2,00,000',
-    benefitType: 'Life Insurance',
-    eligible: true,
-    category: 'Insurance',
-    icon: Shield,
-    details: 'Life insurance coverage at just ₹436/year premium',
+    lender: "Kotak Mahindra Bank",
+    amount: "Up to ₹35,00,000",
+    interest: "10.99% onwards",
+    status: "Eligible",
   },
   {
-    name: 'PMSBY',
-    description: 'Pradhan Mantri Suraksha Bima Yojana',
-    benefit: '₹2,00,000',
-    benefitType: 'Accident Insurance',
-    eligible: true,
-    category: 'Insurance',
-    icon: Shield,
-    details: 'Accident disability coverage at ₹20/year premium',
+    lender: "IDFC FIRST Bank",
+    amount: "Up to ₹40,00,000",
+    interest: "9.99% onwards",
+    status: "Eligible",
   },
   {
-    name: 'Skill India',
-    description: 'Free Skill Development Training',
-    benefit: 'Free Training',
-    benefitType: 'Upskilling',
-    eligible: true,
-    category: 'Education',
-    icon: TrendingUp,
-    details: 'Government-certified skill courses with placement support',
+    lender: "Bajaj Finserv",
+    amount: "Up to ₹55,00,000",
+    interest: "10.00% onwards",
+    status: "Conditional",
   },
   {
-    name: 'PM Mudra Yojana',
-    description: 'Micro-Enterprise Business Loan',
-    benefit: 'Up to ₹50,000',
-    benefitType: 'Business Loan',
-    eligible: true,
-    category: 'Financial Support',
-    icon: Gift,
-    details: 'Collateral-free loans for small businesses',
-  },
+    lender: "IDBI Bank",
+    amount: "Up to ₹25,00,000",
+    interest: "10.50% onwards",
+    status: "Conditional",
+  }
 ];
 
-export function GovtSchemes() {
-  const totalBenefits = 18000; // Yearly estimated benefits missed
-
+export default function Loans() {
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h2 className="mb-2">Benefits You Qualify For</h2>
-        <p className="text-[#6B7280]">
-          Based on your income and profile, you are eligible for these government schemes
-        </p>
-      </div>
+    <div className="max-w-7xl mx-auto px-6 py-8">
 
-      {/* Highlight Banner */}
-      <div className="bg-gradient-to-r from-[#F7931E] to-[#EA8713] text-white rounded-xl p-6 mb-8 shadow-lg">
-        <div className="flex items-start gap-4">
-          <AlertCircle size={32} className="flex-shrink-0" />
-          <div>
-            <h3 className="text-white m-0 mb-2">You're Missing Out!</h3>
-            <p className="m-0 text-white opacity-95 mb-4">
-              You are missing <strong>₹{totalBenefits.toLocaleString('en-IN')}+</strong> in yearly benefits. 
-              These schemes are designed to support workers like you.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <span className="px-3 py-1 bg-white/20 rounded-full text-sm">
-                {schemes.length} schemes available
-              </span>
-              <span className="px-3 py-1 bg-white/20 rounded-full text-sm">
-                100% Government Verified
-              </span>
-            </div>
-          </div>
+      {/* ===== Hero Summary Card (like earnings card) ===== */}
+      <div className="bg-gradient-to-r from-[#0A1F44] to-[#143A6B] rounded-2xl p-8 text-white shadow-lg mb-10 flex justify-between items-center">
+        <div>
+          <p className="text-sm opacity-90 mb-1">
+            Estimated Loan Eligibility
+          </p>
+          <h1 className="text-4xl font-bold mb-2">
+            ₹20,00,000+
+          </h1>
+          <p className="text-sm opacity-90 flex items-center gap-1">
+            <CheckCircle size={16} /> Based on verified income sources
+          </p>
         </div>
+
+        <button className="bg-[#F7931E] hover:bg-[#E8850D] px-6 py-3 rounded-lg text-white font-medium flex items-center gap-2">
+          Improve Eligibility
+          <ExternalLink size={16} />
+        </button>
       </div>
 
-      {/* Scheme Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        {schemes.map((scheme, index) => {
-          const IconComponent = scheme.icon;
-          return (
-            <div
-              key={index}
-              className="bg-white rounded-lg p-6 shadow-sm border border-[#E5E7EB] hover:shadow-md transition-all hover:border-[#3B82F6]"
+      {/* ===== Section Title ===== */}
+      <h2 className="text-xl font-semibold mb-6">
+        Available Loan Providers
+      </h2>
+
+      {/* ===== Loan Cards (like income source cards) ===== */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        {loans.map((loan, index) => (
+          <div
+            key={index}
+            className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition"
+          >
+            {/* Header */}
+            <div className="flex justify-between items-start mb-4">
+              <div className="flex items-center gap-2">
+                <Bank size={20} className="text-[#0A1F44]" />
+                <h3 className="font-semibold">{loan.lender}</h3>
+              </div>
+
+              {loan.status === "Eligible" ? (
+                <CheckCircle size={18} className="text-green-600" />
+              ) : (
+                <AlertCircle size={18} className="text-orange-500" />
+              )}
+            </div>
+
+            {/* Amount */}
+            <p className="text-2xl font-bold text-[#0A1F44] mb-1">
+              {loan.amount}
+            </p>
+
+            <p className="text-sm text-gray-500 mb-4">
+              Interest: {loan.interest}
+            </p>
+
+            {/* Status */}
+            <span
+              className={`text-sm font-medium ${
+                loan.status === "Eligible"
+                  ? "text-green-600"
+                  : "text-orange-500"
+              }`}
             >
-              {/* Header */}
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-12 h-12 bg-[#EFF6FF] rounded-lg flex items-center justify-center flex-shrink-0">
-                  <IconComponent size={24} className="text-[#3B82F6]" />
-                </div>
-                <span className="px-3 py-1 bg-[#D1FAE5] text-[#1E7F5C] rounded-full text-xs">
-                  Eligible
-                </span>
-              </div>
+              {loan.status === "Eligible" ? "Eligible" : "Needs more proof"}
+            </span>
 
-              {/* Content */}
-              <h4 className="m-0 mb-2">{scheme.name}</h4>
-              <p className="text-[#6B7280] text-xs mb-4">{scheme.description}</p>
-
-              {/* Benefit Amount */}
-              <div className="bg-[#F9FAFB] rounded-lg p-4 mb-4">
-                <p className="m-0 text-xs text-[#6B7280] mb-1">{scheme.benefitType}</p>
-                <p className="m-0 text-[#0A1F44] text-xl font-bold">{scheme.benefit}</p>
-              </div>
-
-              {/* Details */}
-              <p className="text-xs text-[#6B7280] mb-4">{scheme.details}</p>
-
-              {/* CTA */}
-              <button className="w-full bg-[#F7931E] hover:bg-[#E8850D] text-white px-4 py-3 rounded-lg transition-colors flex items-center justify-center gap-2">
-                Apply Now
-                <ExternalLink size={16} />
-              </button>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Footer Info */}
-      <div className="bg-white rounded-lg p-6 shadow-sm border-l-4 border-[#1E7F5C]">
-        <div className="flex items-start gap-4">
-          <Shield size={24} className="text-[#1E7F5C] flex-shrink-0" />
-          <div>
-            <h4 className="m-0 mb-2">Government Compliance & Privacy</h4>
-            <p className="m-0 text-[#6B7280] mb-4">
-              ArthiSetu is compliant with all government data protection regulations. Your data is user-owned, 
-              encrypted, and never shared without your explicit consent. We follow DigiLocker security standards.
-            </p>
-            <div className="flex flex-wrap gap-4 text-sm">
-              <a href="#" className="text-[#3B82F6] hover:underline flex items-center gap-1">
-                Privacy Policy <ExternalLink size={14} />
-              </a>
-              <a href="#" className="text-[#3B82F6] hover:underline flex items-center gap-1">
-                Contact Support <ExternalLink size={14} />
-              </a>
-              <a href="#" className="text-[#3B82F6] hover:underline flex items-center gap-1">
-                Help Center <ExternalLink size={14} />
-              </a>
-            </div>
+            {/* CTA */}
+            <button className="mt-4 w-full border border-[#0A1F44] text-[#0A1F44] py-2 rounded-lg hover:bg-[#0A1F44] hover:text-white transition">
+              Check Details
+            </button>
           </div>
-        </div>
+        ))}
+
       </div>
     </div>
   );

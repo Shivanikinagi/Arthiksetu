@@ -92,6 +92,51 @@ def recommend_schemes_endpoint(profile: UserProfile):
 def get_all_schemes():
     return {"schemes": SCHEMES_DB}
 
+@app.get("/api/loans")
+def get_loans():
+    """
+    Returns a list of available loan options.
+    """
+    loans = [
+        {
+            "id": 1,
+            "lender": "Kotak Mahindra Bank",
+            "min_income": "₹10,000 (salary account)",
+            "notes": "Offers \"Mid-Month Advance\" and assesses overall profile."
+        },
+        {
+            "id": 2,
+            "lender": "Axis Bank",
+            "min_income": "₹15,000",
+            "notes": "Offers competitive interest rates and low processing fees."
+        },
+        {
+            "id": 3,
+            "lender": "Bajaj Finserv",
+            "min_income": "Varies by profile",
+            "notes": "Offers up to ₹10 lakh with minimal documentation and instant approval in some cases."
+        },
+        {
+            "id": 4,
+            "lender": "IDFC FIRST Bank",
+            "min_income": "Varies by profile",
+            "notes": "Specializes in digital loans for gig workers without traditional income proof."
+        },
+        {
+            "id": 5,
+            "lender": "HDFC Bank",
+            "min_income": "₹25,000",
+            "notes": "Offers quick digital processing for existing customers."
+        },
+        {
+            "id": 6,
+            "lender": "IDBI Bank",
+            "min_income": "Annual income up to ₹3,00,000",
+            "notes": "Primarily microfinance loans to low-income households/SHGs."
+        }
+    ]
+    return {"loans": loans}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

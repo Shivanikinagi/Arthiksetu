@@ -1,8 +1,8 @@
-import { Building2, FileText, Gift, BarChart3, User, Bot } from 'lucide-react';
+import { Building2, FileText, Gift, BarChart3, User, Bot, Landmark } from 'lucide-react';
 
 interface NavigationProps {
-  currentPage: 'dashboard' | 'tax' | 'schemes' | 'reports' | 'profile' | 'ai-assistant';
-  onNavigate: (page: 'dashboard' | 'tax' | 'schemes' | 'reports' | 'profile' | 'ai-assistant') => void;
+  currentPage: 'dashboard' | 'tax' | 'schemes' | 'loans' | 'reports' | 'profile' | 'ai-assistant';
+  onNavigate: (page: 'dashboard' | 'tax' | 'schemes' | 'loans' | 'reports' | 'profile' | 'ai-assistant') => void;
 }
 
 export function Navigation({ currentPage, onNavigate }: NavigationProps) {
@@ -10,6 +10,7 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
     { id: 'dashboard' as const, label: 'Dashboard', icon: Building2 },
     { id: 'tax' as const, label: 'Tax & ITR', icon: FileText },
     { id: 'schemes' as const, label: 'Govt Schemes', icon: Gift },
+    { id: 'loans' as const, label: 'Loans', icon: Landmark },
     { id: 'reports' as const, label: 'Reports', icon: BarChart3 },
     { id: 'profile' as const, label: 'Profile', icon: User },
     { id: 'ai-assistant' as const, label: 'AI Assistant', icon: Bot },

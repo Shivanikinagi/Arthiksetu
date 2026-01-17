@@ -6,8 +6,9 @@ import { SchemesPage } from './components/SchemesPage';
 import { ReportsPage } from './components/ReportsPage';
 import { ProfilePage } from './components/ProfilePage';
 import { AIAssistantPage } from './components/AIAssistantPage';
+import Loans from './components/Loans';
 
-type PageType = 'dashboard' | 'tax' | 'schemes' | 'reports' | 'profile' | 'ai-assistant' | 'about' | 'how-it-works' | 'privacy' | 'terms' | 'help' | 'contact' | 'faq';
+type PageType = 'dashboard' | 'tax' | 'schemes' | 'loans' | 'reports' | 'profile' | 'ai-assistant' | 'about' | 'how-it-works' | 'privacy' | 'terms' | 'help' | 'contact' | 'faq';
 
 const StaticPage = ({ title, content }: { title: string; content: React.ReactNode }) => (
   <div className="max-w-4xl mx-auto px-4 py-12">
@@ -29,6 +30,8 @@ export default function App() {
         return <TaxPage />;
       case 'schemes':
         return <SchemesPage />;
+      case 'loans':
+        return <Loans />;
       case 'reports':
         return <ReportsPage />;
       case 'profile':
@@ -81,7 +84,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#F4F6F8] font-['Inter',sans-serif]">
-      <Navigation currentPage={currentPage === 'dashboard' || currentPage === 'tax' || currentPage === 'schemes' || currentPage === 'reports' || currentPage === 'profile' ? currentPage : 'dashboard'} onNavigate={(page: any) => setCurrentPage(page)} />
+      <Navigation currentPage={currentPage === 'dashboard' || currentPage === 'tax' || currentPage === 'schemes' || currentPage === 'loans' || currentPage === 'reports' || currentPage === 'profile' || currentPage === 'ai-assistant' ? currentPage : 'dashboard'} onNavigate={(page: any) => setCurrentPage(page)} />
       <main className="pb-12">
         {renderPage()}
       </main>
