@@ -15,7 +15,7 @@ public class MainActivity extends BridgeActivity {
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
 
-    // This is the correct place to ask for SMS permission in a Capacitor app
+    // Ask for SMS permission when the app starts
     if (checkSelfPermission(Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
       requestPermissions(new String[]{Manifest.permission.READ_SMS}, 101);
     } else {
@@ -31,38 +31,44 @@ public class MainActivity extends BridgeActivity {
       // If permission was granted from the popup, read the SMS messages
       readSms();
     } else {
-      Log.e("ArthikSetu", "SMS Permission was denied.");
+      Log.e("ArthikSetu", "SMS Permission was denied by the user.");
     }
   }
 
   private void readSms() {
-    Log.d("ArthikSetu", "Permission granted. Starting to read SMS...");
-    Cursor cursor = getContentResolver().query(
-      Telephony.Sms.Inbox.CONTENT_URI,
-      null,
-      null,
-      null,
-      "date DESC" // Read newest messages first
-    );
+    Log.d("ArthikSetu", "Permission granted. Starting to read SMS messages...");
+    Cursor cursor = null;
+    try {
+      cursor = getContentResolver().query(
+        Telephony.Sms.Inbox.CONTENT_URI,
+        null,
+        null,
+        null,
+        "date DESC" // Read newest messages first
+      );
 
-    if (cursor != null) {
-      Log.d("ArthikSetu", "Found " + cursor.getCount() + " SMS messages.");
-      while (cursor.moveToNext()) {
-        try {
-          // Get the message body
-          String body = cursor.getString(cursor.getColumnIndexOrThrow("body"));
-          
-          // Log the body of each SMS to Logcat
-          Log.d("SMS_BODY", body);
-
-        } catch (Exception e) {
-          Log.e("ArthikSetu", "Error reading a single SMS.", e);
+      if (cursor != null) {
+        Log.d("ArthikSetu", "Found " + cursor.getCount() + " SMS messages.");
+        while (cursor.moveToNext()) {
+          try {
+            // Get the message body
+            String body = cursor.getString(cursor.getColumnIndexOrThrow("body"));
+            // Log the body of each SMS to Logcat
+            Log.d("SMS_BODY", "Message: " + body);
+          } catch (Exception e) {
+            Log.e("ArthikSetu", "Error reading a single SMS row.", e);
+          }
         }
+        Log.d("ArthikSetu", "Finished reading SMS messages.");
+      } else {
+          Log.e("ArthikSetu", "Could not get SMS cursor. The cursor is null.");
       }
-      cursor.close();
-      Log.d("ArthikSetu", "Finished reading SMS.");
-    } else {
-        Log.e("ArthikSetu", "Could not get SMS cursor. It is null.");
+    } catch (Exception e) {
+        Log.e("ArthikSetu", "An error occurred while querying for SMS messages.", e);
+    } finally {
+        if (cursor != null) {
+            cursor.close();
+        }
     }
   }
 }
