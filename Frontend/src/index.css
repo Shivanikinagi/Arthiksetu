@@ -77,7 +77,7 @@
     --color-gray-700: oklch(.373 .034 259.733);
     --color-gray-900: oklch(.21 .034 264.665);
     --color-white: #fff;
-    --spacing: .25rem;
+    --spacing: .25rem; 
     --container-4xl: 56rem;
     --container-7xl: 80rem;
     --text-xs: .75rem;
@@ -2071,3 +2071,5 @@ html {
   syntax: "*";
   inherits: false
 }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
