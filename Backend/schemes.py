@@ -12,7 +12,8 @@ SCHEMES_DB = [
         "occupation_tags": ["vendor", "hawker", "street"],
         "max_income": 300000
     },
-    "category": "Loan"
+    "category": "Loan",
+    "url": "https://pmsvanidhi.mohua.gov.in/"
   },
   {
     "id": 2,
@@ -27,7 +28,8 @@ SCHEMES_DB = [
         "max_age": 40,
         "citizenship": "Indian"
     },
-    "category": "Pension"
+    "category": "Pension",
+    "url": "https://www.npscra.nsdl.co.in/scheme-details.php"
   },
   {
     "id": 3,
@@ -42,7 +44,8 @@ SCHEMES_DB = [
         "max_age": 50,
         "has_bank_account": True
     },
-    "category": "Insurance"
+    "category": "Insurance",
+    "url": "https://financialservices.gov.in/beta/en/pmjjby"
   },
   {
     "id": 4,
@@ -57,7 +60,8 @@ SCHEMES_DB = [
         "max_age": 70,
         "has_bank_account": True
     },
-    "category": "Insurance"
+    "category": "Insurance",
+    "url": "https://financialservices.gov.in/beta/en/pmsby"
   },
   {
     "id": 5,
@@ -71,7 +75,8 @@ SCHEMES_DB = [
         "min_age": 18,
         "requires_business_plan": True
     },
-    "category": "Business"
+    "category": "Business",
+    "url": "https://www.kviconline.gov.in/pmegpeportal/pmegphome/index.jsp"
   },
   {
     "id": 6,
@@ -86,7 +91,8 @@ SCHEMES_DB = [
         "target_group": ["SC", "ST", "Women"],
         "project_type": ["Greenfield"]
     },
-    "category": "Business"
+    "category": "Business",
+    "url": "https://www.standupmitra.in/"
   },
 ]
 

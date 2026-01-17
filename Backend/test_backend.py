@@ -19,16 +19,17 @@ def test_parse_sms():
     response = client.post("/api/parse_sms", json=payload)
     assert response.status_code == 200
     data = response.json()
+    # Zomato (1200 Credit) and Swiggy (450 Debit) are kept. UPI is ignored.
     assert data["summary"]["total_credit"] == 1200
-    assert data["summary"]["total_debit"] == 950 # 500 + 450
+    assert data["summary"]["total_debit"] == 450 
     
     # Check transactions
     txs = data["transactions"]
-    assert len(txs) == 3
+    assert len(txs) == 2
     assert txs[0]["merchant"] == "Zomato"
     assert txs[0]["type"] == "credit"
     
-    assert txs[1]["merchant"] == "UPI"
+    assert txs[1]["merchant"] == "Swiggy"
     assert txs[1]["type"] == "debit"
 
 def test_recommend_schemes():

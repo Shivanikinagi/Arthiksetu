@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { CheckCircle2, AlertCircle, TrendingUp, Upload } from 'lucide-react';
@@ -22,7 +23,15 @@ const monthlyData = [
 ];
 
 export function DashboardPage() {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const totalEarnings = earningsSources.reduce((sum, source) => sum + source.amount, 0);
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      alert(`Income proof uploaded successfully: ${file.name}`);
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -37,7 +46,16 @@ export function DashboardPage() {
               Aggregated from {earningsSources.length} income sources
             </p>
           </div>
+          <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            onChange={handleFileChange}
+            accept=".pdf,.jpg,.jpeg,.png"
+            style={{ display: 'none' }}
+          />
           <Button
+            onClick={() => fileInputRef.current?.click()}
             className="bg-[#F7931E] hover:bg-[#e07d0a] text-white border-0 px-6 py-6"
           >
             <Upload className="w-4 h-4 mr-2" />

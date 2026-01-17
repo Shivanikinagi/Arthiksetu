@@ -1,8 +1,22 @@
+import { useState } from 'react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { User, Phone, Mail, MapPin, Calendar, Shield, CheckCircle } from 'lucide-react';
 
 export function ProfilePage() {
+  const [isEditing, setIsEditing] = useState(false);
+  const [profile, setProfile] = useState({
+    phone: '+91 98765 43210',
+    email: 'rajesh.kumar@email.com',
+    location: 'Mumbai, Maharashtra',
+    dob: '15 August 1990'
+  });
+
+  const handleSave = () => {
+    setIsEditing(false);
+    alert("Profile Updated Successfully!");
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       <div>
@@ -26,8 +40,11 @@ export function ProfilePage() {
               </span>
             </div>
             <p className="text-gray-600 mb-4">Member since January 2024</p>
-            <Button className="bg-[#F7931E] hover:bg-[#e07d0a] text-white border-0">
-              Edit Profile
+            <Button
+              onClick={() => isEditing ? handleSave() : setIsEditing(true)}
+              className={`${isEditing ? 'bg-[#1E7F5C] hover:bg-[#16654a]' : 'bg-[#F7931E] hover:bg-[#e07d0a]'} text-white border-0`}
+            >
+              {isEditing ? 'Save Changes' : 'Edit Profile'}
             </Button>
           </div>
         </div>
@@ -36,32 +53,64 @@ export function ProfilePage() {
           <div className="space-y-4">
             <div className="flex items-start gap-3">
               <Phone className="w-5 h-5 text-[#3B82F6] mt-1" />
-              <div>
+              <div className="flex-1">
                 <p className="text-sm text-gray-600 mb-1">Phone Number</p>
-                <p className="text-[#0A1F44]">+91 98765 43210</p>
+                {isEditing ? (
+                  <input
+                    className="w-full border border-gray-300 rounded px-2 py-1 text-[#0A1F44]"
+                    value={profile.phone}
+                    onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                  />
+                ) : (
+                  <p className="text-[#0A1F44]">{profile.phone}</p>
+                )}
               </div>
             </div>
             <div className="flex items-start gap-3">
               <Mail className="w-5 h-5 text-[#3B82F6] mt-1" />
-              <div>
+              <div className="flex-1">
                 <p className="text-sm text-gray-600 mb-1">Email</p>
-                <p className="text-[#0A1F44]">rajesh.kumar@email.com</p>
+                {isEditing ? (
+                  <input
+                    className="w-full border border-gray-300 rounded px-2 py-1 text-[#0A1F44]"
+                    value={profile.email}
+                    onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                  />
+                ) : (
+                  <p className="text-[#0A1F44]">{profile.email}</p>
+                )}
               </div>
             </div>
           </div>
           <div className="space-y-4">
             <div className="flex items-start gap-3">
               <MapPin className="w-5 h-5 text-[#3B82F6] mt-1" />
-              <div>
+              <div className="flex-1">
                 <p className="text-sm text-gray-600 mb-1">Location</p>
-                <p className="text-[#0A1F44]">Mumbai, Maharashtra</p>
+                {isEditing ? (
+                  <input
+                    className="w-full border border-gray-300 rounded px-2 py-1 text-[#0A1F44]"
+                    value={profile.location}
+                    onChange={(e) => setProfile({ ...profile, location: e.target.value })}
+                  />
+                ) : (
+                  <p className="text-[#0A1F44]">{profile.location}</p>
+                )}
               </div>
             </div>
             <div className="flex items-start gap-3">
               <Calendar className="w-5 h-5 text-[#3B82F6] mt-1" />
-              <div>
+              <div className="flex-1">
                 <p className="text-sm text-gray-600 mb-1">Date of Birth</p>
-                <p className="text-[#0A1F44]">15 August 1990</p>
+                {isEditing ? (
+                  <input
+                    className="w-full border border-gray-300 rounded px-2 py-1 text-[#0A1F44]"
+                    value={profile.dob}
+                    onChange={(e) => setProfile({ ...profile, dob: e.target.value })}
+                  />
+                ) : (
+                  <p className="text-[#0A1F44]">{profile.dob}</p>
+                )}
               </div>
             </div>
           </div>
@@ -78,7 +127,7 @@ export function ProfilePage() {
             { name: 'Phone Number', status: true },
             { name: 'Email Address', status: true },
           ].map((item) => (
-            <div 
+            <div
               key={item.name}
               className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
             >
@@ -101,7 +150,7 @@ export function ProfilePage() {
           <div>
             <h3 className="mb-2">Data Privacy & Security</h3>
             <p className="text-sm opacity-90">
-              Your personal information is encrypted and stored securely. We never share your data 
+              Your personal information is encrypted and stored securely. We never share your data
               without your explicit consent. All data handling complies with Indian data protection regulations.
             </p>
           </div>

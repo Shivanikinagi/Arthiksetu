@@ -3,26 +3,26 @@ import { Button } from './ui/button';
 import { Shield, FileText, Download, CheckCircle, Info } from 'lucide-react';
 
 const taxDeductions = [
-  { 
-    section: 'Section 80C', 
-    description: 'EPF, PPF, Life Insurance premiums', 
+  {
+    section: 'Section 80C',
+    description: 'EPF, PPF, Life Insurance premiums',
     currentAmount: 45000,
     maxAmount: 150000,
-    savings: 13500 
+    savings: 13500
   },
-  { 
-    section: 'Section 80D', 
-    description: 'Health Insurance Premium', 
+  {
+    section: 'Section 80D',
+    description: 'Health Insurance Premium',
     currentAmount: 12000,
     maxAmount: 25000,
-    savings: 3600 
+    savings: 3600
   },
-  { 
-    section: 'Section 80E', 
-    description: 'Education Loan Interest', 
+  {
+    section: 'Section 80E',
+    description: 'Education Loan Interest',
     currentAmount: 0,
     maxAmount: 0,
-    savings: 0 
+    savings: 0
   },
 ];
 
@@ -52,7 +52,7 @@ export function TaxPage() {
           <div className="flex-1">
             <h3 className="text-[#0A1F44] mb-1">Audit-Safe Income Reporting</h3>
             <p className="text-sm text-gray-600">
-              All calculations are based on verified income sources with proper documentation. 
+              All calculations are based on verified income sources with proper documentation.
               Your data is secure and compliant with IT Department guidelines.
             </p>
           </div>
@@ -109,7 +109,7 @@ export function TaxPage() {
         <h3 className="text-[#0A1F44] mb-6">Tax Deductions & Savings</h3>
         <div className="space-y-4">
           {taxDeductions.map((deduction) => (
-            <div 
+            <div
               key={deduction.section}
               className="p-5 bg-gray-50 rounded-lg border border-gray-200 hover:border-[#3B82F6] transition-colors"
             >
@@ -151,7 +151,7 @@ export function TaxPage() {
               {deduction.maxAmount > 0 && deduction.currentAmount < deduction.maxAmount && (
                 <div className="mt-3 pt-3 border-t border-gray-200">
                   <p className="text-sm text-[#F7931E]">
-                    💡 You can save ₹{((deduction.maxAmount - deduction.currentAmount) * 0.3).toLocaleString('en-IN')} 
+                    💡 You can save ₹{((deduction.maxAmount - deduction.currentAmount) * 0.3).toLocaleString('en-IN')}
                     more by utilizing the remaining ₹{(deduction.maxAmount - deduction.currentAmount).toLocaleString('en-IN')} limit
                   </p>
                 </div>
@@ -175,14 +175,19 @@ export function TaxPage() {
 
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row gap-4">
-        <Button 
+        <Button
+          onClick={() => window.open('https://www.incometax.gov.in/iec/foportal/', '_blank')}
           className="flex-1 bg-[#F7931E] hover:bg-[#e07d0a] text-white border-0 py-6"
         >
           <FileText className="w-5 h-5 mr-2" />
           File ITR Now
         </Button>
-        <Button 
+        <Button
           variant="outline"
+          onClick={() => {
+            const fileName = "Income_Passport_Verified_2024.pdf";
+            alert(`Downloading ${fileName}...`);
+          }}
           className="flex-1 border-2 border-[#0A1F44] text-[#0A1F44] hover:bg-[#0A1F44] hover:text-white py-6"
         >
           <Download className="w-5 h-5 mr-2" />
@@ -196,7 +201,7 @@ export function TaxPage() {
           <Info className="w-5 h-5 text-[#3B82F6] flex-shrink-0 mt-0.5" />
           <div className="text-sm text-gray-700">
             <p className="mb-2">
-              Your Income Passport is a verified document that consolidates all your earnings. 
+              Your Income Passport is a verified document that consolidates all your earnings.
               Use it for loan applications, visa processing, or government benefit eligibility.
             </p>
             <p className="text-xs text-gray-600">

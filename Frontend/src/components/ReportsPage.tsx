@@ -47,7 +47,7 @@ export function ReportsPage() {
         <h3 className="text-[#0A1F44] mb-6">Available Reports</h3>
         <div className="space-y-3">
           {reports.map((report, index) => (
-            <div 
+            <div
               key={index}
               className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
             >
@@ -62,9 +62,13 @@ export function ReportsPage() {
                   </p>
                 </div>
               </div>
-              <Button 
+              <Button
                 variant="outline"
                 className="border-[#0A1F44] text-[#0A1F44] hover:bg-[#0A1F44] hover:text-white"
+                onClick={() => {
+                  const fileName = report.name.replace(/\s+/g, '_').toLowerCase();
+                  alert(`Downloading ${fileName}.pdf...`);
+                }}
               >
                 <Download className="w-4 h-4 mr-2" />
                 Download

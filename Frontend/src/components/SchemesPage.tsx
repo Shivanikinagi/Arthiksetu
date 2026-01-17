@@ -1,83 +1,53 @@
+import { useState, useEffect } from 'react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { CheckCircle, Clock, Gift, ArrowRight, TrendingUp, Shield, Heart } from 'lucide-react';
 
-const schemes = [
-  {
-    id: 1,
-    name: 'PM-SVANidhi',
-    description: 'Micro Credit Scheme for Street Vendors',
-    benefit: 'Loan up to ₹10,000',
-    eligibleAmount: 10000,
-    status: 'eligible',
-    icon: Gift,
-    color: '#1E7F5C',
-    details: 'Low-interest working capital loan with digital transaction incentives',
-    criteria: 'Street vendors, gig workers with verified income',
-  },
-  {
-    id: 2,
-    name: 'Atal Pension Yojana',
-    description: 'Guaranteed pension for old age security',
-    benefit: 'Monthly pension ₹1,000-₹5,000',
-    eligibleAmount: 3000,
-    status: 'eligible',
-    icon: TrendingUp,
-    color: '#3B82F6',
-    details: 'Contributory pension scheme with government co-contribution',
-    criteria: 'Age 18-40, any Indian citizen',
-  },
-  {
-    id: 3,
-    name: 'PMJJBY',
-    description: 'Pradhan Mantri Jeevan Jyoti Bima Yojana',
-    benefit: '₹2,00,000 life insurance',
-    eligibleAmount: 200000,
-    status: 'eligible',
-    icon: Shield,
-    color: '#F7931E',
-    details: 'Life insurance coverage at just ₹436 per year',
-    criteria: 'Age 18-50 with savings bank account',
-  },
-  {
-    id: 4,
-    name: 'PM-SBY',
-    description: 'Suraksha Bima Yojana',
-    benefit: '₹2,00,000 accident cover',
-    eligibleAmount: 200000,
-    status: 'eligible',
-    icon: Heart,
-    color: '#0A1F44',
-    details: 'Accidental death & disability cover at ₹20 per year',
-    criteria: 'Age 18-70 with savings bank account',
-  },
-  {
-    id: 5,
-    name: 'PMEGP',
-    description: 'Employment Generation Programme',
-    benefit: 'Loan up to ₹25,00,000',
-    eligibleAmount: 2500000,
-    status: 'pending',
-    icon: TrendingUp,
-    color: '#8B5CF6',
-    details: 'Subsidy-linked loans for setting up micro-enterprises',
-    criteria: 'Age 18+, business plan required',
-  },
-  {
-    id: 6,
-    name: 'Stand-Up India',
-    description: 'Entrepreneurship support scheme',
-    benefit: 'Loan ₹10L-₹1Cr',
-    eligibleAmount: 1000000,
-    status: 'pending',
-    icon: Gift,
-    color: '#EC4899',
-    details: 'Bank loans for SC/ST/Women entrepreneurs',
-    criteria: 'Greenfield enterprise in manufacturing/services',
-  },
-];
+// Icon mapping since we can't send components from backend
+const ICON_MAP: any = {
+  'Gift': Gift,
+  'TrendingUp': TrendingUp,
+  'Shield': Shield,
+  'Heart': Heart
+};
 
 export function SchemesPage() {
+  const [schemes, setSchemes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // simulating a user profile for recommendation
+    const userProfile = {
+      age: 28,
+      income: 180000,
+      occupation: "food delivery",
+      category: "General"
+    };
+
+    fetch('http://localhost:8000/api/recommend_schemes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userProfile)
+    })
+      .then(res => res.json())
+      .then(data => {
+        // The backend returns eligible schemes.
+        // We can also append some "pending" ones manually or fetch all if we wanted.
+        // For now, let's show what the AI recommends.
+        const formatted = data.schemes.map((s: any) => ({
+          ...s,
+          icon: ICON_MAP[s.category === 'Loan' ? 'Gift' : s.category === 'Insurance' ? 'Shield' : 'TrendingUp'] || Gift,
+          color: s.category === 'Loan' ? '#1E7F5C' : '#3B82F6'
+        }));
+        setSchemes(formatted);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error("Failed to fetch schemes", err);
+        setLoading(false);
+      });
+  }, []);
+
   const eligibleSchemes = schemes.filter(s => s.status === 'eligible');
   const totalBenefits = eligibleSchemes.reduce((sum, s) => sum + s.eligibleAmount, 0);
   const yearlyRecurringBenefits = 18000;
@@ -149,17 +119,16 @@ export function SchemesPage() {
           {schemes.map((scheme) => {
             const Icon = scheme.icon;
             const isEligible = scheme.status === 'eligible';
-            
+
             return (
-              <Card 
-                key={scheme.id} 
-                className={`p-6 bg-white hover:shadow-xl transition-all ${
-                  isEligible ? 'border-2 border-[#1E7F5C]' : ''
-                }`}
+              <Card
+                key={scheme.id}
+                className={`p-6 bg-white hover:shadow-xl transition-all ${isEligible ? 'border-2 border-[#1E7F5C]' : ''
+                  }`}
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-start gap-4 flex-1">
-                    <div 
+                    <div
                       className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0"
                       style={{ backgroundColor: `${scheme.color}20` }}
                     >
@@ -192,16 +161,20 @@ export function SchemesPage() {
                   <p className="text-sm text-gray-700 mb-2">{scheme.details}</p>
                   <div className="flex items-start gap-2 mt-3 pt-3 border-t border-gray-200">
                     <CheckCircle className="w-4 h-4 text-[#1E7F5C] flex-shrink-0 mt-0.5" />
-                    <p className="text-xs text-gray-600">{scheme.criteria}</p>
+                    <p className="text-xs text-gray-600">
+                      {typeof scheme.criteria === 'object'
+                        ? Object.entries(scheme.criteria).map(([k, v]) => `${k.replace(/_/g, ' ')}: ${v}`).join(', ')
+                        : scheme.criteria}
+                    </p>
                   </div>
                 </div>
 
-                <Button 
-                  className={`w-full ${
-                    isEligible 
-                      ? 'bg-[#F7931E] hover:bg-[#e07d0a] text-white border-0' 
-                      : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-0'
-                  }`}
+                <Button
+                  onClick={() => scheme.url && window.open(scheme.url, '_blank')}
+                  className={`w-full ${isEligible
+                    ? 'bg-[#F7931E] hover:bg-[#e07d0a] text-white border-0'
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-0'
+                    }`}
                 >
                   {isEligible ? (
                     <>
@@ -227,11 +200,11 @@ export function SchemesPage() {
           <div className="flex-1">
             <h3 className="mb-2">Government Compliance & Privacy</h3>
             <p className="text-sm opacity-90 mb-3">
-              ArthikSetu is a privacy-first platform. Your data is encrypted, stored securely, 
+              ArthikSetu is a privacy-first platform. Your data is encrypted, stored securely,
               and only shared with government portals with your explicit consent.
             </p>
             <p className="text-xs opacity-75">
-              All scheme applications are processed through official government channels. 
+              All scheme applications are processed through official government channels.
               We do not charge any fees for scheme discovery or application assistance.
             </p>
           </div>
@@ -248,10 +221,17 @@ export function SchemesPage() {
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3">
-            <Button variant="outline" className="border-[#0A1F44] text-[#0A1F44]">
+            <Button
+              variant="outline"
+              className="border-[#0A1F44] text-[#0A1F44]"
+              onClick={() => window.location.href = 'mailto:support@arthiksetu.gov.in'}
+            >
               Contact Support
             </Button>
-            <Button className="bg-[#3B82F6] hover:bg-[#2563eb] text-white border-0">
+            <Button
+              className="bg-[#3B82F6] hover:bg-[#2563eb] text-white border-0"
+              onClick={() => window.open('https://calendly.com/', '_blank')}
+            >
               Schedule Call
             </Button>
           </div>
