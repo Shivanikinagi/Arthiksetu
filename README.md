@@ -2,8 +2,6 @@
 
 **ArthikSetu** is a unified financial platform designed to bridge the gap between hard work and financial stability for India's gig workers (delivery partners, drivers, freelancers).
 
-![ArthikSetu Dashboard](https://via.placeholder.com/800x400?text=ArthikSetu+Dashboard+Preview)
-
 ## 🚀 Key Features
 
 *   **📊 Unified Earnings Dashboard**: Automatically aggregates income from multiple platforms (Swiggy, Zomato, Uber, etc.) into a single view.
