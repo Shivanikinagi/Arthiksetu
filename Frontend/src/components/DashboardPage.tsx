@@ -74,8 +74,8 @@ export function DashboardPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Hero Summary Section */}
       <div className="bg-gradient-to-br from-[#0A1F44] to-[#1a3a6b] rounded-2xl p-8 sm:p-12 text-white shadow-lg">
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-          <div>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <div className="flex-1">
             <p className="text-sm opacity-90 mb-2">Total Monthly Earnings</p>
             <h1 className="text-5xl sm:text-6xl mb-3">₹{totalEarnings.toLocaleString('en-IN')}</h1>
             <p className="text-sm opacity-80 flex items-center gap-2">
@@ -83,21 +83,33 @@ export function DashboardPage() {
               Aggregated from {incomeSources.length} income sources
             </p>
           </div>
-          <input
-            type="file"
-            ref={fileInputRef}
-            className="hidden"
-            onChange={handleFileChange}
-            accept=".pdf,.jpg,.jpeg,.png"
-            style={{ display: 'none' }}
-          />
-          <Button
-            onClick={() => fileInputRef.current?.click()}
-            className="bg-[#F7931E] hover:bg-[#e07d0a] text-white border-0 px-6 py-6"
-          >
-            <Upload className="w-4 h-4 mr-2" />
-            Add Income Proof
-          </Button>
+
+          {/* Arthik Score Display */}
+          <div className="bg-white/10 p-6 rounded-2xl backdrop-blur-sm border border-white/20 text-center min-w-[200px] transform hover:scale-105 transition-transform">
+            <p className="text-sm opacity-80 mb-2">Your Arthik Score</p>
+            <div className="text-5xl font-bold text-[#F7931E] mb-1">{arthikScore}</div>
+            <p className="text-xs opacity-70">
+              {arthikScore >= 750 ? 'Excellent' : arthikScore >= 500 ? 'Good' : 'Needs Improvement'}
+            </p>
+          </div>
+
+          <div className="flex flex-col items-end gap-2">
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              onChange={handleFileChange}
+              accept=".pdf,.jpg,.jpeg,.png"
+              style={{ display: 'none' }}
+            />
+            <Button
+              onClick={() => fileInputRef.current?.click()}
+              className="bg-[#F7931E] hover:bg-[#e07d0a] text-white border-0 px-6 py-6"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Add Income Proof
+            </Button>
+          </div>
         </div>
       </div>
 

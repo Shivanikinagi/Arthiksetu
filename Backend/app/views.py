@@ -18,7 +18,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 try:
     from sms_parser import SMSParser
     from schemes import get_eligible_schemes, SCHEMES_DB
-    from gemini_service import analyze_earning_trend
+    from schemes import get_eligible_schemes, SCHEMES_DB
+    from gemini_service import analyze_earning_trend, verify_document_with_ai
 except ImportError:
     pass
 
@@ -40,9 +41,21 @@ class DashboardView(APIView):
         for source in income_sources:
             source['color'] = COLOR_MAP.get(source['name'], '#3B82F6')
             
+        # Calc Arthik Score
+        total_income = sum(s['amount'] for s in income_sources)
+        verified_count = sum(1 for s in income_sources if s['verified'])
+        
+        score = 300 # Base CIBIL equivalent
+        score += min(total_income / 1000 * 5, 300) # Income Weight
+        score += (verified_count * 100) # Verification Weight
+        if len(earnings) >= 3: score += 50 # Consistency Weight
+        
+        arthik_score = min(int(score), 900)
+            
         return Response({
             "incomeSources": income_sources,
             "earningsData": earnings,
+            "arthikScore": arthik_score
         })
 
 class VerifyDocumentView(APIView):
@@ -52,6 +65,39 @@ class VerifyDocumentView(APIView):
         doc_type = request.data.get('doc_type', 'Document')
         file_obj = request.FILES.get('file')
         
+        if not file_obj:
+             return Response({"status": "failed", "message": "No file uploaded"}, status=400)
+
+        # AI Verification for specific ID documents
+        if doc_type in ['Aadhaar', 'PAN Card', 'Bank Account']:
+            try:
+                # Read file content
+                file_content = file_obj.read()
+                mime_type = file_obj.content_type or 'image/jpeg'
+                
+                # Verify with Gemini
+                result = verify_document_with_ai(file_content, mime_type, doc_type)
+                
+                if not result.get('is_valid'):
+                    return Response({
+                        "status": "failed",
+                        "message": result.get('reason', 'Verification failed'),
+                        "extracted_id": result.get('extracted_id')
+                    }, status=400)
+                
+                return Response({
+                    "status": "verified",
+                    "doc_type": doc_type,
+                    "message": f"{doc_type} Verified Successfully!",
+                    "feature_extracted": result.get('extracted_id')
+                })
+            except Exception as e:
+                print(f"Verification Error: {e}")
+                # Fallback to simulated success if AI fails (or return error if strict)
+                # User asked for "proper" verification, so error is better, but for demo stability...
+                return Response({"status": "failed", "message": "Verification service unavailable"}, status=503)
+
+        # Default / Income Proof Logic (Simulated Extraction)
         # Simulate processing delay
         time.sleep(1.5)
         
