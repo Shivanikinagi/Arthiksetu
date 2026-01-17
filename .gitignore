@@ -50,3 +50,6 @@ yarn-error.log*
 # System
 tmp/
 .gemini/
+
+# Firebase Secrets
+Backend/serviceAccountKey.json
