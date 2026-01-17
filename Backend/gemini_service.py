@@ -15,7 +15,7 @@ def analyze_earning_trend(earnings_data):
     Uses Google Gemini to analyze earning trends and provide advice.
     """
     # api_key = os.getenv("GEMINI_API_KEY")
-    api_key = "AIzaSyBOmRJQ8Q21Ln5FvpHx8sglC6CsyeTqcPA"
+    api_key = ""
     
     # if not api_key:
     #    return "Gemini API Key not configured. Please set GEMINI_API_KEY environment variable to use AI insights."
