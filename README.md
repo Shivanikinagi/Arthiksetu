@@ -1,6 +1,6 @@
 # ArthikSetu - Empowering India's Gig Economy 🇮🇳
 
-![ArthikSetu Banner](https://via.placeholder.com/1200x400/0A1F44/ffffff?text=ArthikSetu+Financial+Bridge)
+![ArthikSetu Banner](arthiksetu-banner.svg)
 
 **ArthikSetu** is a comprehensive financial wellness platform tailored for the unique needs of India's 15M+ gig workers. We bridge the gap between hard work and financial stability by providing a unified interface for earnings tracking, simplified financial insights, and direct access to eligible government schemes.
 
