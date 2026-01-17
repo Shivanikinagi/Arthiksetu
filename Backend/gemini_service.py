@@ -11,15 +11,14 @@ from datetime import datetime, timedelta
 from typing import List, Dict
 
 # Configure the API key
-API_KEY = "AIzaSyBzVZtrEryFJ2tntrymz_PBXE_osReq6vo"
+API_KEY = "AIzaSyBOmRJQ8Q21Ln5FvpHx8sglC6CsyeTqcPA"
 
 def configure_gemini():
     """Configure Gemini API"""
     if genai is None:
         raise ImportError("Google Generative AI module not found. Install google-generativeai")
-    
     genai.configure(api_key=API_KEY)
-    return genai.GenerativeModel('gemini-2.5-flash')
+    return genai.GenerativeModel('gemini-1.5-flash')
 
 def analyze_earning_trend(earnings_data):
     """
@@ -102,23 +101,20 @@ async def chat_with_ai_assistant(message: str, history: List[Dict]) -> str:
         context = "\\n".join([f"{h['role']}: {h['content']}" for h in history[-10:]])
         
         prompt = f"""
-        You are ArthikSetu's AI Assistant, a friendly and empathetic financial guide for gig workers (delivery partners, drivers, freelancers) in India.
+        You are an AI assistant for gig workers in India helping them track income and manage finances.
         
-        Your Goal: Help them maximize earnings, manage money, save tax, and access government schemes.
-        
-        Context of conversation:
+        Previous conversation:
         {context}
         
-        User Query: {message}
+        User: {message}
         
-        Guidelines:
-        1. Be Conversational & Real: Use natural language, acknowledge their hard work.
-        2. Hinglish Friendly: You can use occasional Hindi words (like 'Bhai', 'Paisa', 'Bachat') if it fits naturally.
-        3. Actionable Advice: Don't just give generic advice. Give specific tips relevant to Indian gig economy (e.g., peak hours, petrol saving, schemes like Ayushman Bharat).
-        4. If they ask about features (like "How do I check my tax?"), guide them to the Tax section of the app.
-        5. Keep responses concise (max 3-4 sentences) unless a detailed explanation is asked for.
+        Provide helpful, encouraging advice about:
+        - Income tracking
+        - Financial planning
+        - Government schemes
+        - Gig economy tips
         
-        Answer the user's query now:
+        Keep responses under 100 words and friendly.
         """
         
         response = model.generate_content(prompt)

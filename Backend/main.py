@@ -271,27 +271,6 @@ async def simplify_scheme_endpoint(profile: UserProfile):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
-@app.get("/api/dashboard")
-def dashboard_endpoint():
-    """
-    Mock dashboard data for frontend compatibility
-    """
-    return {
-        "incomeSources": [
-            {"name": "Swiggy", "amount": 15000, "verified": True, "status": "verified"},
-            {"name": "Zomato", "amount": 12000, "verified": True, "status": "verified"},
-            {"name": "Uber", "amount": 18000, "verified": False, "status": "pending"}
-        ],
-        "earningsData": [
-            {"month": "Jan", "amount": 42000},
-            {"month": "Feb", "amount": 38500},
-            {"month": "Mar", "amount": 45000}
-        ],
-        "arthikScore": 750
-    }
-
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-

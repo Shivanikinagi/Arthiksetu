@@ -96,7 +96,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#F4F6F8] font-['Inter',sans-serif]">
-      <Navigation currentPage={currentPage} onNavigate={(page: any) => setCurrentPage(page)} />
+      <Navigation currentPage={currentPage === 'dashboard' || currentPage === 'tax' || currentPage === 'schemes' || currentPage === 'loans' || currentPage === 'reports' || currentPage === 'profile' || currentPage === 'ai-assistant' ? currentPage : 'dashboard'} onNavigate={(page: any) => setCurrentPage(page)} />
       <main className="pb-12">
         {renderPage()}
       </main>
