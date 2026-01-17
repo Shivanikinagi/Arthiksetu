@@ -21,22 +21,88 @@ export function ProfilePage() {
   });
 
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
+  const [otpSent, setOtpSent] = useState<{ [key: string]: boolean }>({});
+  const [otpInputs, setOtpInputs] = useState<{ [key: string]: string }>({});
+  const [verifyContactInputs, setVerifyContactInputs] = useState<{ [key: string]: string }>({});
   const docInputRef = useRef<HTMLInputElement>(null);
 
-  const handleVerifyClick = (docName: string) => {
+  const handleVerifyClick = async (docName: string) => {
     if (docName === 'Phone Number' || docName === 'Email Address') {
-      setVerificationStatus(prev => ({ ...prev, [docName]: 'verifying' }));
+      // First, show input field to confirm/edit the number/email
+      const type = docName === 'Phone Number' ? 'phone' : 'email';
+      const defaultValue = type === 'phone' ? profile.phone : profile.email;
 
-      // Simulate OTP Verification
-      setTimeout(() => {
-        setVerificationStatus(prev => ({ ...prev, [docName]: 'verified' }));
-        alert(`${docName} verified successfully via OTP!`);
-      }, 2000);
+      setVerifyContactInputs(prev => ({ ...prev, [docName]: defaultValue }));
+      setVerificationStatus(prev => ({ ...prev, [docName]: 'entering_contact' }));
       return;
     }
 
     setUploadingDoc(docName);
     docInputRef.current?.click();
+  };
+
+  const handleSendOtp = async (docName: string) => {
+    const type = docName === 'Phone Number' ? 'phone' : 'email';
+    const target = verifyContactInputs[docName];
+
+    if (!target) {
+      alert("Please enter a valid value");
+      return;
+    }
+
+    setVerificationStatus(prev => ({ ...prev, [docName]: 'sending_otp' }));
+
+    try {
+      const response = await fetch('http://localhost:8000/api/send_otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target, type }),
+      });
+
+      if (response.ok) {
+        setOtpSent(prev => ({ ...prev, [docName]: true }));
+        setVerificationStatus(prev => ({ ...prev, [docName]: 'otp_sent' }));
+        alert(`OTP sent to ${target} (Use 123456 for demo)`);
+      } else {
+        alert('Failed to send OTP');
+        setVerificationStatus(prev => ({ ...prev, [docName]: 'entering_contact' }));
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error sending OTP');
+      setVerificationStatus(prev => ({ ...prev, [docName]: 'entering_contact' }));
+    }
+  };
+
+  const handleVerifyOtp = async (docName: string) => {
+    const type = docName === 'Phone Number' ? 'phone' : 'email';
+    const target = verifyContactInputs[docName];
+    const otp = otpInputs[docName];
+
+    setVerificationStatus(prev => ({ ...prev, [docName]: 'verifying' }));
+
+    try {
+      const response = await fetch('http://localhost:8000/api/verify_otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target, type, otp }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setVerificationStatus(prev => ({ ...prev, [docName]: 'verified' }));
+        setOtpSent(prev => ({ ...prev, [docName]: false }));
+        alert('Verification Successful!');
+      } else {
+        alert('Invalid OTP. Please try again.');
+        setVerificationStatus(prev => ({ ...prev, [docName]: 'otp_sent' }));
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Verification failed');
+      setVerificationStatus(prev => ({ ...prev, [docName]: 'otp_sent' }));
+    }
   };
 
   const handleDocUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -234,8 +300,46 @@ export function ProfilePage() {
                   onClick={() => handleVerifyClick(docName)}
                 >
                   <Upload className="w-4 h-4 mr-2" />
-                  Verify Now
+                  {docName === 'Phone Number' || docName === 'Email Address' ? 'Verify via OTP' : 'Verify Now'}
                 </Button>
+              )}
+
+              {status === 'entering_contact' && (
+                <div className="flex items-center gap-2">
+                  <input
+                    type={docName === 'Email Address' ? 'email' : 'text'}
+                    className="border rounded px-2 py-1 text-sm w-48"
+                    value={verifyContactInputs[docName] || ''}
+                    onChange={(e) => setVerifyContactInputs({ ...verifyContactInputs, [docName]: e.target.value })}
+                    placeholder={docName === 'Email Address' ? 'Enter Email' : 'Enter Phone'}
+                  />
+                  <Button
+                    size="sm"
+                    className="bg-[#3B82F6] hover:bg-[#2563EB] text-white"
+                    onClick={() => handleSendOtp(docName)}
+                  >
+                    Send OTP
+                  </Button>
+                </div>
+              )}
+
+              {status === 'otp_sent' && (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder="Enter OTP"
+                    className="border rounded px-2 py-1 text-sm w-24"
+                    value={otpInputs[docName] || ''}
+                    onChange={(e) => setOtpInputs({ ...otpInputs, [docName]: e.target.value })}
+                  />
+                  <Button
+                    size="sm"
+                    className="bg-[#1E7F5C] hover:bg-[#16654a] text-white"
+                    onClick={() => handleVerifyOtp(docName)}
+                  >
+                    Check
+                  </Button>
+                </div>
               )}
             </div>
           ))}

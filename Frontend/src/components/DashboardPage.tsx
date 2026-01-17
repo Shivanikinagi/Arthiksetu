@@ -9,6 +9,8 @@ export function DashboardPage() {
   const [incomeSources, setIncomeSources] = useState<any[]>([]);
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('http://localhost:8000/api/dashboard')
@@ -29,34 +31,32 @@ export function DashboardPage() {
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      setUploading(true);
+      setUploadMessage(null);
+
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('doc_type', 'Income Proof'); // Tag as income proof
+      formData.append('doc_type', 'Income Proof');
 
       try {
-        setLoading(true);
         const response = await fetch('http://localhost:8000/api/verify_document', {
           method: 'POST',
           body: formData,
         });
 
-        if (response.ok) {
-          const result = await response.json();
-          // In a real app, this would likely trigger a re-fetch or state update
-          // For now, we simulate a successful "Add" by showing a success message
-          alert(`Success: ${result.message}`);
+        const data = await response.json();
 
-          // Optional: Reload dashboard data if backend updated anything
-          // fetchDashboardData(); 
+        if (response.ok) {
+          setUploadMessage(`Uploaded: ${file.name}`);
+          // Optionally refresh data here if verification adds a new source immediately
         } else {
-          alert("Upload failed. Please try again.");
+          setUploadMessage(`Upload failed: ${data.message || 'Unknown error'}`);
         }
       } catch (error) {
-        console.error("Upload error:", error);
-        alert("An error occurred during upload.");
+        console.error('Error uploading file:', error);
+        setUploadMessage('Error uploading file. Please try again.');
       } finally {
-        setLoading(false);
-        // Reset input
+        setUploading(false);
         if (fileInputRef.current) fileInputRef.current.value = "";
       }
     }
@@ -84,16 +84,7 @@ export function DashboardPage() {
             </p>
           </div>
 
-          {/* Arthik Score Display */}
-          <div className="bg-white/10 p-6 rounded-2xl backdrop-blur-sm border border-white/20 text-center min-w-[200px] transform hover:scale-105 transition-transform">
-            <p className="text-sm opacity-80 mb-2">Your Arthik Score</p>
-            <div className="text-5xl font-bold text-[#F7931E] mb-1">{arthikScore}</div>
-            <p className="text-xs opacity-70">
-              {arthikScore >= 750 ? 'Excellent' : arthikScore >= 500 ? 'Good' : 'Needs Improvement'}
-            </p>
-          </div>
-
-          <div className="flex flex-col items-end gap-2">
+          <div className="relative">
             <input
               type="file"
               ref={fileInputRef}
@@ -105,10 +96,20 @@ export function DashboardPage() {
             <Button
               onClick={() => fileInputRef.current?.click()}
               className="bg-[#F7931E] hover:bg-[#e07d0a] text-white border-0 px-6 py-6"
+              disabled={uploading}
             >
-              <Upload className="w-4 h-4 mr-2" />
-              Add Income Proof
+              {uploading ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Upload className="w-4 h-4 mr-2" />
+              )}
+              {uploading ? 'Uploading...' : 'Add Income Proof'}
             </Button>
+            {uploadMessage && (
+              <div className="absolute top-full right-0 mt-2 bg-white text-sm text-[#0A1F44] p-2 rounded shadow-lg border border-gray-200 z-10 w-full md:w-auto min-w-[200px]">
+                {uploadMessage}
+              </div>
+            )}
           </div>
         </div>
       </div>

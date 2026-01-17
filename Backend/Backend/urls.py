@@ -19,7 +19,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from django.http import JsonResponse
-from app.views import DashboardView, VerifyDocumentView, ParseSMSView, RecommendSchemesView, AllSchemesView, TaxCalculationView, EligibleLoansView, GenerateReportView
+from app.views import DashboardView, VerifyDocumentView, ParseSMSView, RecommendSchemesView, AllSchemesView, TaxCalculationView, EligibleLoansView, GenerateReportView, DownloadReportView, SendOTPView, VerifyOTPView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -31,5 +31,14 @@ urlpatterns = [
     path('api/tax_calculation', TaxCalculationView.as_view()),
     path('api/loans', EligibleLoansView.as_view()),
     path('api/generate_report', GenerateReportView.as_view()),
+    path('api/download_report/<str:report_id>', DownloadReportView.as_view()),
+    path('api/send_otp', SendOTPView.as_view()),
+    path('api/verify_otp', VerifyOTPView.as_view()),
     path('', lambda request: JsonResponse({'message': 'Backend is running'})),
 ]
+
+from django.conf import settings
+from django.conf.urls.static import static
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
