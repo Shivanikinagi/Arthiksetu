@@ -9,6 +9,8 @@ export function DashboardPage() {
   const [incomeSources, setIncomeSources] = useState<any[]>([]);
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('http://localhost:8000/api/dashboard')
@@ -30,10 +32,36 @@ export function DashboardPage() {
 
   const totalEarnings = incomeSources.reduce((sum, source) => sum + source.amount, 0);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      alert(`Income proof uploaded successfully: ${file.name}`);
+      setUploading(true);
+      setUploadMessage(null);
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('doc_type', 'Income Proof');
+
+      try {
+        const response = await fetch('http://localhost:8000/api/verify_document', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          setUploadMessage(`Uploaded: ${file.name}`);
+          // Optionally refresh data here if verification adds a new source immediately
+        } else {
+          setUploadMessage(`Upload failed: ${data.message || 'Unknown error'}`);
+        }
+      } catch (error) {
+        console.error('Error uploading file:', error);
+        setUploadMessage('Error uploading file. Please try again.');
+      } finally {
+        setUploading(false);
+      }
     }
   };
 
@@ -69,10 +97,20 @@ export function DashboardPage() {
           <Button
             onClick={() => fileInputRef.current?.click()}
             className="bg-[#F7931E] hover:bg-[#e07d0a] text-white border-0 px-6 py-6"
+            disabled={uploading}
           >
-            <Upload className="w-4 h-4 mr-2" />
-            Add Income Proof
+            {uploading ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Upload className="w-4 h-4 mr-2" />
+            )}
+            {uploading ? 'Uploading...' : 'Add Income Proof'}
           </Button>
+          {uploadMessage && (
+            <div className="absolute top-full right-0 mt-2 bg-white text-sm text-[#0A1F44] p-2 rounded shadow-lg border border-gray-200 z-10 w-full md:w-auto">
+              {uploadMessage}
+            </div>
+          )}
         </div>
       </div>
 

@@ -4,10 +4,10 @@ import { Download, FileText, TrendingUp, Calendar } from 'lucide-react';
 
 export function ReportsPage() {
   const reports = [
-    { name: 'Annual Income Report 2024', date: 'Dec 30, 2024', type: 'PDF', size: '245 KB' },
-    { name: 'Monthly Earnings - December', date: 'Dec 30, 2024', type: 'PDF', size: '128 KB' },
-    { name: 'Tax Statement FY 2024-25', date: 'Dec 15, 2024', type: 'PDF', size: '198 KB' },
-    { name: 'Income Passport (Verified)', date: 'Dec 1, 2024', type: 'PDF', size: '312 KB' },
+    { id: 'annual_2024', name: 'Annual Income Report 2024', date: 'Dec 30, 2024', type: 'PDF', size: '245 KB' },
+    { id: 'monthly_dec_2024', name: 'Monthly Earnings - December', date: 'Dec 30, 2024', type: 'PDF', size: '128 KB' },
+    { id: 'tax_statement_24_25', name: 'Tax Statement FY 2024-25', date: 'Dec 15, 2024', type: 'PDF', size: '198 KB' },
+    { id: 'income_proof_verified', name: 'Income Passport (Verified)', date: 'Dec 1, 2024', type: 'PDF', size: '312 KB' },
   ];
 
   return (
@@ -66,8 +66,7 @@ export function ReportsPage() {
                 variant="outline"
                 className="border-[#0A1F44] text-[#0A1F44] hover:bg-[#0A1F44] hover:text-white"
                 onClick={() => {
-                  const fileName = report.name.replace(/\s+/g, '_').toLowerCase();
-                  alert(`Downloading ${fileName}.pdf...`);
+                  window.location.href = `http://localhost:8000/api/download_report/${report.id || 'default'}`;
                 }}
               >
                 <Download className="w-4 h-4 mr-2" />

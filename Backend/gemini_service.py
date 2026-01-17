@@ -1,4 +1,8 @@
-import google.generativeai as genai
+try:
+    import google.generativeai as genai
+except ImportError:
+    genai = None
+
 import os
 import time
 
@@ -14,6 +18,9 @@ def analyze_earning_trend(earnings_data):
     
     if not api_key:
         return "Gemini API Key not configured. Please set GEMINI_API_KEY environment variable to use AI insights."
+
+    if genai is None:
+        return "Google Generative AI module not found. Install google-generativeai to use AI features."
 
     try:
         genai.configure(api_key=api_key)
