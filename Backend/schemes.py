@@ -154,3 +154,31 @@ def get_eligible_schemes(user_profile):
             
         eligible.append(s)
     return eligible
+
+def simplify_scheme_explanation(scheme):
+    """
+    Simplifies government scheme explanation for easy understanding.
+    """
+    simple_text = f"""
+    🎯 {scheme['name']}
+    
+    What you get: {scheme['benefit']}
+    
+    Simple explanation: {scheme['description']}
+    
+    Who can apply: """
+    
+    criteria = scheme.get('criteria', {})
+    if 'min_age' in criteria:
+        simple_text += f"Age {criteria['min_age']}+"
+    if 'max_age' in criteria:
+        simple_text += f" to {criteria['max_age']}"
+    if 'max_income' in criteria:
+        simple_text += f", Income below ₹{criteria['max_income']:,}"
+    if 'occupation_tags' in criteria:
+        simple_text += f", Occupation: {', '.join(criteria['occupation_tags'])}"
+    
+    simple_text += f"\\n\\nCategory: {scheme.get('category', 'General')}"
+    simple_text += f"\\n\\nApply at: {scheme.get('url', 'Contact local office')}"
+    
+    return simple_text

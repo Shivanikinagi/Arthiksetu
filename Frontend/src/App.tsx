@@ -7,8 +7,12 @@ import { ReportsPage } from './components/ReportsPage';
 import { ProfilePage } from './components/ProfilePage';
 import { AIAssistantPage } from './components/AIAssistantPage';
 import { Loans } from './components/Loans';
+import { UnifiedDashboard } from './components/UnifiedDashboard';
+import { AIChatbot } from './components/AIChatbot';
+import { MessageDecoder } from './components/MessageDecoder';
+import { DocumentVerification } from './components/DocumentVerification';
 
-type PageType = 'dashboard' | 'tax' | 'schemes' | 'loans' | 'reports' | 'profile' | 'ai-assistant' | 'about' | 'how-it-works' | 'privacy' | 'terms' | 'help' | 'contact' | 'faq';
+type PageType = 'dashboard' | 'tax' | 'schemes' | 'loans' | 'reports' | 'profile' | 'ai-assistant' | 'about' | 'how-it-works' | 'privacy' | 'terms' | 'help' | 'contact' | 'faq' | 'unified-dashboard' | 'chatbot' | 'message-decoder' | 'document-verification';
 
 const StaticPage = ({ title, content }: { title: string; content: React.ReactNode }) => (
   <div className="max-w-4xl mx-auto px-4 py-12">
@@ -26,6 +30,14 @@ export default function App() {
     switch (currentPage) {
       case 'dashboard':
         return <DashboardPage />;
+      case 'unified-dashboard':
+        return <UnifiedDashboard />;
+      case 'chatbot':
+        return <AIChatbot />;
+      case 'message-decoder':
+        return <MessageDecoder />;
+      case 'document-verification':
+        return <DocumentVerification />;
       case 'tax':
         return <TaxPage />;
       case 'schemes':
@@ -84,7 +96,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#F4F6F8] font-['Inter',sans-serif]">
-      <Navigation currentPage={currentPage === 'dashboard' || currentPage === 'tax' || currentPage === 'schemes' || currentPage === 'loans' || currentPage === 'reports' || currentPage === 'profile' || currentPage === 'ai-assistant' ? currentPage : 'dashboard'} onNavigate={(page: any) => setCurrentPage(page)} />
+      <Navigation currentPage={currentPage} onNavigate={(page: any) => setCurrentPage(page)} />
       <main className="pb-12">
         {renderPage()}
       </main>

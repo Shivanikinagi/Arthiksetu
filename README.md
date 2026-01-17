@@ -1,63 +1,75 @@
-# 🇮🇳 ArthikSetu: Empowering India's Gig Economy Workers
+# ArthikSetu - Financial Bridge for Gig Workers
 
-**ArthikSetu** is a unified financial platform designed to bridge the gap between hard work and financial stability for India's gig workers (delivery partners, drivers, freelancers).
+ArthikSetu is a comprehensive financial wellness platform designed for India's gig economy workers. It provides unified earnings tracking, AI-powered insights, and access to government schemes.
 
-## 🚀 Key Features
+## Features
 
-*   **📊 Unified Earnings Dashboard**: Automatically aggregates income from multiple platforms (Swiggy, Zomato, Uber, etc.) into a single view.
-*   **🤖 AI Earnings Assistant**: A smart chatbot that parser SMS messages to track daily earnings without manual entry.
-*   **🏛️ Government Schemes**: Personalized recommendations for government benefits based on age, income, and occupation.
-*   **✅ Document Verification**: Easy upload and verification of essential documents (Aadhaar, PAN) for loan and scheme processing.
+*   **Unified Earnings Dashboard**: Aggregates income from platforms like Swiggy, Zomato, Uber, etc.
+*   **Smart SMS Analyzer**: AI-based tool to parse transaction SMS and track income automatically.
+*   **AI Chatbot Assistant**: Conversational interface for financial queries and advice.
+*   **Financial Message Decoder**: Translates confusing bank messages into simple language.
+*   **Document Verification**: AI-powered verification for Aadhaar, PAN, and other IDs.
+*   **Government Schemes**: Smart recommendation engine for eligible government benefits.
+*   **Income Risk Prediction**: Predicts potential low-earning periods based on historical data.
+*   **Reports**: Generate audit-safe financial reports.
 
-## 🛠️ Tech Stack
+## Project Structure
 
-*   **Frontend**: React (Vite), TypeScript, Tailwind CSS, Shadcn/UI.
-*   **Backend**: Python, Django REST Framework.
-*   **Database**: SQLite.
-*   **AI/ML**: Regex-based text parsing, Rule-based recommendation engine.
+*   `Backend/`: Python (FastAPI + Django) backend.
+    *   `main.py`: Primary entry point for AI features and API.
+    *   `gemini_service.py`: Google Gemini AI integration.
+*   `Frontend/`: React (Vite) frontend.
+    *   `src/components/`: Reusable UI components and Feature pages.
 
-## 🏁 Getting Started
+## Setup Instructions
 
 ### Prerequisites
-*   Node.js & npm
-*   Python 3.8+
+*   Python 3.10+
+*   Node.js 18+
 
-### Installation
+### 1. Backend Setup
+Navigate to the Backend directory:
+```bash
+cd Arthiksetu/Backend
+```
 
-1.  **Clone the repository**
-    ```bash
-    git clone https://github.com/SakshiMore2312/Arthiksetu.git
-    cd Arthiksetu
-    ```
+Install dependencies:
+```bash
+pip install -r requirements.txt
+```
 
-2.  **Setup Backend**
-    ```bash
-    cd Backend
-    pip install -r requirements.txt
-    python manage.py migrate
-    python manage.py runserver
-    # Server starts at http://localhost:8000
-    ```
+Run the API server:
+```bash
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
+The API will be available at `http://localhost:8000`.
 
-3.  **Setup Frontend**
-    ```bash
-    cd Frontend
-    npm install
-    npm run dev
-    # UI starts at http://localhost:3000
-    ```
+### 2. Frontend Setup
+Open a new terminal and navigate to the Frontend directory:
+```bash
+cd Arthiksetu/Frontend
+```
 
-## 📖 Usage
+Install dependencies:
+```bash
+npm install
+```
 
-1.  Open the frontend in your browser.
-2.  Navigate to the **AI Assistant** to input sample SMS messages for parsing.
-3.  Check the **Dashboard** to see the visualized earnings data.
-4.  Explore the **Govt Schemes** page to find eligible benefits.
+Run the development server:
+```bash
+npm run dev
+```
 
-## 🤝 Contributing
+Open your browser and visit the URL shown (usually `http://localhost:5173`).
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+## Usage
+1.  **Dashboard**: View your aggregated income.
+2.  **SMS Analyzer**: Paste transaction SMS to test the AI parser.
+3.  **Chatbot**: Ask questions like "How can I save tax?".
+4.  **Schemes**: View schemes you are eligible for (based on verified income).
+5.  **Decoder**: Paste a bank SMS to understand it.
+6.  **Verify**: Upload a dummy ID image to test verification.
 
-## 📄 License
-
-This project is licensed under the MIT License.
+## Notes
+*   This is a demo version. Data is mocked or stored in-memory for some features to facilitate easy testing without a full database setup.
+*   The AI features utilize Google Gemini API.

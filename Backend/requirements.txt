@@ -5,3 +5,6 @@ fastapi
 uvicorn
 pydantic
 google-generativeai
+python-multipart
+numpy
+Pillow
