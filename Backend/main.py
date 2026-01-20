@@ -45,6 +45,32 @@ class UserProfile(BaseModel):
 def read_root():
     return {"message": "ArthikSetu AI Backend is Running"}
 
+@app.get("/api/dashboard")
+def get_dashboard():
+    """
+    Get dashboard data with income sources and monthly earnings.
+    """
+    # Sample data - in production, fetch from database
+    income_sources = [
+        {"name": "Swiggy", "amount": 12500, "verified": True, "source": "Swiggy", "description": "Food delivery earnings"},
+        {"name": "Uber", "amount": 18000, "verified": True, "source": "Uber", "description": "Ride-sharing income"},
+        {"name": "Zomato", "amount": 9500, "verified": False, "source": "Zomato", "description": "Food delivery earnings"},
+    ]
+    
+    earnings_data = [
+        {"month": "Aug", "amount": 35000},
+        {"month": "Sep", "amount": 38000},
+        {"month": "Oct", "amount": 42000},
+        {"month": "Nov", "amount": 40000},
+        {"month": "Dec", "amount": 45000},
+        {"month": "Jan", "amount": 40000},
+    ]
+    
+    return {
+        "incomeSources": income_sources,
+        "earningsData": earnings_data
+    }
+
 @app.post("/api/verify_document")
 async def verify_document(file: UploadFile = File(...), doc_type: str = Form(...)):
     """

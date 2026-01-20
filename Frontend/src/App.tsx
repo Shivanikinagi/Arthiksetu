@@ -8,11 +8,11 @@ import { ProfilePage } from './components/ProfilePage';
 import { AIAssistantPage } from './components/AIAssistantPage';
 import { Loans } from './components/Loans';
 import { UnifiedDashboard } from './components/UnifiedDashboard';
-import { AIChatbot } from './components/AIChatbot';
+import { SMSAnalyzer } from './components/SMSAnalyzer';
 import { MessageDecoder } from './components/MessageDecoder';
 import { DocumentVerification } from './components/DocumentVerification';
 
-type PageType = 'dashboard' | 'tax' | 'schemes' | 'loans' | 'reports' | 'profile' | 'ai-assistant' | 'about' | 'how-it-works' | 'privacy' | 'terms' | 'help' | 'contact' | 'faq' | 'unified-dashboard' | 'chatbot' | 'message-decoder' | 'document-verification';
+type PageType = 'dashboard' | 'unified-dashboard' | 'sms-analyzer' | 'tax' | 'schemes' | 'loans' | 'reports' | 'profile' | 'ai-assistant' | 'message-decoder' | 'document-verify' | 'about' | 'how-it-works' | 'privacy' | 'terms' | 'help' | 'contact' | 'faq';
 
 const StaticPage = ({ title, content }: { title: string; content: React.ReactNode }) => (
   <div className="max-w-4xl mx-auto px-4 py-12">
@@ -32,11 +32,11 @@ export default function App() {
         return <DashboardPage />;
       case 'unified-dashboard':
         return <UnifiedDashboard />;
-      case 'chatbot':
-        return <AIChatbot />;
+      case 'sms-analyzer':
+        return <SMSAnalyzer />;
       case 'message-decoder':
         return <MessageDecoder />;
-      case 'document-verification':
+      case 'document-verify':
         return <DocumentVerification />;
       case 'tax':
         return <TaxPage />;
@@ -95,61 +95,76 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F4F6F8] font-['Inter',sans-serif]">
-      <Navigation currentPage={currentPage === 'dashboard' || currentPage === 'tax' || currentPage === 'schemes' || currentPage === 'loans' || currentPage === 'reports' || currentPage === 'profile' || currentPage === 'ai-assistant' ? currentPage : 'dashboard'} onNavigate={(page: any) => setCurrentPage(page)} />
-      <main className="pb-12">
+    <div className="min-h-screen bg-gray-50 font-['Inter',sans-serif]">
+      <Navigation currentPage={currentPage === 'dashboard' || currentPage === 'unified-dashboard' || currentPage === 'sms-analyzer' || currentPage === 'tax' || currentPage === 'schemes' || currentPage === 'loans' || currentPage === 'reports' || currentPage === 'profile' || currentPage === 'ai-assistant' || currentPage === 'message-decoder' || currentPage === 'document-verify' ? currentPage : 'dashboard'} onNavigate={(page: any) => setCurrentPage(page)} />
+      <main>
         {renderPage()}
       </main>
 
-      {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 mt-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="w-10 h-10 bg-[#0A1F44] rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold">AS</span>
+      {/* Footer - Enhanced */}
+      <footer className="bg-gradient-to-br from-gray-900 via-[#0A1F44] to-[#1e3a5f] border-t border-gray-800 mt-20 relative overflow-hidden">
+        {/* Animated Background */}
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute top-0 left-0 w-96 h-96 bg-blue-500 rounded-full mix-blend-overlay filter blur-3xl"></div>
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500 rounded-full mix-blend-overlay filter blur-3xl"></div>
+        </div>
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+            {/* Brand Section */}
+            <div className="col-span-1 md:col-span-2">
+              <div className="flex items-center space-x-3 mb-6">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-xl">
+                  <span className="text-white font-black text-xl">AS</span>
                 </div>
-                <h3 className="text-[#0A1F44]">ArthikSetu</h3>
+                <span className="text-2xl font-black text-white heading-display">ArthikSetu</span>
               </div>
-              <p className="text-sm text-gray-600">
-                Empowering India's gig workers with unified earnings tracking,
-                tax assistance, and government benefit access.
+              <p className="text-gray-300 text-sm max-w-md leading-relaxed mb-6">
+                Empowering India's gig workers with AI-powered financial tools for earnings tracking, tax management, and government benefits access.
               </p>
+              <div className="flex items-center gap-3">
+                <div className="px-4 py-2 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
+                  <span className="text-green-400 font-semibold text-sm">🔒 Privacy-first</span>
+                </div>
+                <div className="px-4 py-2 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
+                  <span className="text-blue-400 font-semibold text-sm">✓ Govt Compliant</span>
+                </div>
+              </div>
             </div>
 
+            {/* Quick Links */}
             <div>
-              <h4 className="text-[#0A1F44] mb-4">Quick Links</h4>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li><button onClick={() => setCurrentPage('about')} className="hover:text-[#0A1F44]">About Us</button></li>
-                <li><button onClick={() => setCurrentPage('how-it-works')} className="hover:text-[#0A1F44]">How It Works</button></li>
-                <li><button onClick={() => setCurrentPage('privacy')} className="hover:text-[#0A1F44]">Privacy Policy</button></li>
-                <li><button onClick={() => setCurrentPage('terms')} className="hover:text-[#0A1F44]">Terms of Service</button></li>
+              <h4 className="font-bold text-white mb-6 text-lg heading-primary">Quick Links</h4>
+              <ul className="space-y-3 text-sm">
+                <li><button onClick={() => setCurrentPage('about')} className="text-gray-300 hover:text-white transition-colors hover:translate-x-1 inline-block">→ About Us</button></li>
+                <li><button onClick={() => setCurrentPage('how-it-works')} className="text-gray-300 hover:text-white transition-colors hover:translate-x-1 inline-block">→ How It Works</button></li>
+                <li><button onClick={() => setCurrentPage('faq')} className="text-gray-300 hover:text-white transition-colors hover:translate-x-1 inline-block">→ FAQ</button></li>
+                <li><button onClick={() => setCurrentPage('contact')} className="text-gray-300 hover:text-white transition-colors hover:translate-x-1 inline-block">→ Contact</button></li>
               </ul>
             </div>
 
+            {/* Legal */}
             <div>
-              <h4 className="text-[#0A1F44] mb-4">Support</h4>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li><button onClick={() => setCurrentPage('help')} className="hover:text-[#0A1F44]">Help Center</button></li>
-                <li><button onClick={() => setCurrentPage('contact')} className="hover:text-[#0A1F44]">Contact Us</button></li>
-                <li><button onClick={() => setCurrentPage('faq')} className="hover:text-[#0A1F44]">FAQs</button></li>
-                <li className="flex items-center gap-2">
-                  <span>Helpline:</span>
-                  <a href="tel:18001234567" className="text-[#0A1F44] font-medium hover:underline">xxxx-xxx-xxxx</a>
-                </li>
+              <h4 className="font-bold text-white mb-6 text-lg heading-primary">Legal</h4>
+              <ul className="space-y-3 text-sm">
+                <li><button onClick={() => setCurrentPage('privacy')} className="text-gray-300 hover:text-white transition-colors hover:translate-x-1 inline-block">→ Privacy Policy</button></li>
+                <li><button onClick={() => setCurrentPage('terms')} className="text-gray-300 hover:text-white transition-colors hover:translate-x-1 inline-block">→ Terms of Service</button></li>
+                <li><button onClick={() => setCurrentPage('help')} className="text-gray-300 hover:text-white transition-colors hover:translate-x-1 inline-block">→ Help Center</button></li>
               </ul>
             </div>
           </div>
 
-          <div className="mt-8 pt-8 border-t border-gray-200 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-gray-600">
-              © 2024 ArthikSetu. All rights reserved.
-            </p>
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-gray-600">🔒 Privacy-first, user-owned data</span>
-              <span className="text-gray-400">•</span>
-              <span className="text-gray-600">Government compliant platform</span>
+          {/* Bottom Bar */}
+          <div className="pt-8 border-t border-gray-700">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+              <p className="text-gray-400 text-sm">
+                © 2026 ArthikSetu. All rights reserved. Made with ❤️ for India's gig workers.
+              </p>
+              <div className="flex items-center gap-2 text-xs text-gray-400">
+                <span className="px-3 py-1.5 bg-white/5 rounded-lg">v1.0.0</span>
+                <span>•</span>
+                <span className="px-3 py-1.5 bg-green-500/10 text-green-400 rounded-lg font-semibold">● Online</span>
+              </div>
             </div>
           </div>
         </div>

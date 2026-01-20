@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
-import { Bot, Send, Loader2 } from 'lucide-react';
+import { Bot, Send, Loader2, Sparkles, TrendingUp, CheckCircle } from 'lucide-react';
 
 export function AIAssistant() {
     const [input, setInput] = useState('');
@@ -35,60 +35,144 @@ export function AIAssistant() {
     };
 
     return (
-        <Card className="p-6 bg-white border border-blue-100 shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-                <div className="p-2 bg-blue-50 rounded-lg">
-                    <Bot className="w-6 h-6 text-blue-600" />
-                </div>
-                <div>
-                    <h3 className="text-[#0A1F44] font-semibold">AI Earnings Assistant</h3>
-                    <p className="text-sm text-gray-500">Paste SMS texts to track earnings automatically</p>
-                </div>
-            </div>
+        <Card className="p-8 bg-white border border-blue-100 shadow-xl rounded-2xl hover-lift relative overflow-hidden">
+            {/* Gradient Background */}
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-purple-50/30 to-pink-50/20 opacity-50"></div>
 
-            <div className="space-y-4">
-                <label className="text-xs text-gray-500 block mb-2">
-                    <strong>Supported Platforms:</strong> Zomato, Swiggy, Zepto, Blinkit, Uber, Ola, UrbanCompany, Porter, Dunzo.
-                </label>
-                <textarea
-                    className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none min-h-[100px]"
-                    placeholder="Paste transaction SMS here..."
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                />
-
-                <Button
-                    onClick={handleAnalyze}
-                    disabled={loading || !input.trim()}
-                    className="w-full bg-[#0A1F44] hover:bg-[#0A1F44]/90"
-                >
-                    {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
-                    Analyze Transactions
-                </Button>
-
-                {result && (
-                    <div className="mt-4 space-y-3 bg-gray-50 p-4 rounded-lg animate-in fade-in slide-in-from-top-2">
-                        <div className="flex justify-between items-center pb-2 border-b border-gray-200">
-                            <span className="text-sm font-medium">Analysis Result</span>
-                            <div className="text-right">
-                                <p className="text-xs text-gray-500">Total Credit</p>
-                                <span className="text-green-600 font-bold text-lg">
-                                    +₹{result.summary?.total_credit || 0}
-                                </span>
-                            </div>
+            <div className="relative">
+                {/* Header */}
+                <div className="flex items-center gap-4 mb-6">
+                    <div className="relative">
+                        <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-lg">
+                            <Bot className="w-8 h-8 text-white" />
                         </div>
-                        <div className="space-y-2 max-h-40 overflow-y-auto">
-                            {result.transactions?.map((tx: any, i: number) => (
-                                <div key={i} className="flex justify-between text-sm py-1 border-b border-gray-100 last:border-0">
-                                    <span className="text-gray-700">{tx.merchant} <span className="text-xs text-gray-400">({tx.type})</span></span>
-                                    <span className={tx.type === 'credit' ? 'text-green-600 font-medium' : 'text-red-500 font-medium'}>
-                                        ₹{tx.amount}
-                                    </span>
-                                </div>
-                            ))}
+                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-md">
+                            <Sparkles className="w-3 h-3 text-white" />
                         </div>
                     </div>
-                )}
+                    <div>
+                        <h3 className="text-2xl font-bold text-gray-900 heading-primary">AI Earnings Assistant</h3>
+                        <p className="text-sm text-gray-500">Paste SMS texts to track earnings automatically</p>
+                    </div>
+                </div>
+
+                {/* Supported Platforms Badge */}
+                <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-100">
+                    <p className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                        Supported Platforms
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                        {['Zomato', 'Swiggy', 'Zepto', 'Blinkit', 'Uber', 'Ola', 'UrbanCompany', 'Porter', 'Dunzo'].map((platform) => (
+                            <span key={platform} className="px-3 py-1.5 bg-white rounded-lg text-xs font-semibold text-gray-700 shadow-sm border border-gray-200">
+                                {platform}
+                            </span>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Input Area */}
+                <div className="space-y-4">
+                    <div className="relative">
+                        <textarea
+                            className="w-full p-4 border-2 border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none min-h-[140px] transition-all resize-none"
+                            placeholder="Paste your transaction SMS here...
+
+Example:
+Dear Customer, Rs.450 has been credited to your account for order #12345 on Zomato.
+
+You can paste multiple messages separated by blank lines."
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                        />
+                        <div className="absolute bottom-3 right-3 text-xs text-gray-400">
+                            {input.length} characters
+                        </div>
+                    </div>
+
+                    <Button
+                        onClick={handleAnalyze}
+                        disabled={loading || !input.trim()}
+                        className="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed border-0"
+                    >
+                        {loading ? (
+                            <>
+                                <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                                Analyzing Transactions...
+                            </>
+                        ) : (
+                            <>
+                                <Sparkles className="w-5 h-5 mr-2" />
+                                Analyze Transactions
+                                <Send className="w-4 h-4 ml-2" />
+                            </>
+                        )}
+                    </Button>
+
+                    {/* Results */}
+                    {result && (
+                        <div className="mt-6 space-y-4 bg-gradient-to-br from-green-50 to-blue-50 p-6 rounded-xl animate-fade-in-up border-2 border-green-200 shadow-lg">
+                            {/* Summary Header */}
+                            <div className="flex justify-between items-center pb-4 border-b-2 border-green-200">
+                                <div className="flex items-center gap-2">
+                                    <div className="p-2 bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow-md">
+                                        <TrendingUp className="w-5 h-5 text-white" />
+                                    </div>
+                                    <span className="text-lg font-bold text-gray-900 heading-primary">Analysis Result</span>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Credit</p>
+                                    <span className="text-green-600 font-black text-3xl heading-display">
+                                        +₹{result.summary?.total_credit || 0}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Transaction List */}
+                            <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
+                                {result.transactions?.map((tx: any, i: number) => (
+                                    <div key={i} className="flex justify-between items-center p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-all group">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${tx.type === 'credit' ? 'bg-green-100' : 'bg-red-100'
+                                                }`}>
+                                                <TrendingUp className={`w-5 h-5 ${tx.type === 'credit' ? 'text-green-600' : 'text-red-600 rotate-180'
+                                                    }`} />
+                                            </div>
+                                            <div>
+                                                <span className="font-semibold text-gray-900">{tx.merchant}</span>
+                                                <span className="ml-2 px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full font-medium">
+                                                    {tx.type}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <span className={`text-lg font-bold ${tx.type === 'credit' ? 'text-green-600' : 'text-red-500'
+                                            }`}>
+                                            {tx.type === 'credit' ? '+' : '-'}₹{tx.amount}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Summary Stats */}
+                            {result.summary && (
+                                <div className="grid grid-cols-2 gap-4 pt-4 border-t-2 border-green-200">
+                                    <div className="p-4 bg-white rounded-lg border border-gray-200">
+                                        <p className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">Total Transactions</p>
+                                        <p className="text-2xl font-black text-gray-900 heading-display">
+                                            {result.transactions?.length || 0}
+                                        </p>
+                                    </div>
+                                    <div className="p-4 bg-white rounded-lg border border-gray-200">
+                                        <p className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">Credits Found</p>
+                                        <p className="text-2xl font-black text-green-600 heading-display">
+                                            {result.transactions?.filter((t: any) => t.type === 'credit').length || 0}
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
             </div>
         </Card>
     );

@@ -1,52 +1,35 @@
 import { useRef, useState, useEffect } from 'react';
+import { Card } from './ui/card';
 import { Button } from './ui/button';
-import {
-  Menu,
-  Upload,
-  CheckCircle2,
-  TrendingUp,
-  ScanFace,
-  FileText,
-  Lock,
-  Bot,
-} from 'lucide-react';
-import { AreaChart, Area, ResponsiveContainer } from 'recharts';
+import { CheckCircle2, AlertCircle, TrendingUp, Upload, Loader2, MessageSquare, Bot, FileSearch, ShieldCheck, Gift, ArrowRight } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-// Mock Data
-const MOCK_INCOME_SOURCES = [
-  { name: 'Swiggy', amount: 12500, date: 'Today, 2:30 PM', verified: true },
-  { name: 'Zomato', amount: 8400, date: 'Yesterday, 6:15 PM', verified: true },
-  { name: 'Uber', amount: 15200, date: '12 Mar, 2024', verified: false },
-];
-
-const MOCK_MONTHLY_DATA = [
-  { month: 'Oct', amount: 32000 },
-  { month: 'Nov', amount: 38000 },
-  { month: 'Dec', amount: 42000 },
-  { month: 'Jan', amount: 35000 },
-  { month: 'Feb', amount: 45000 },
-  { month: 'Mar', amount: 42600 },
-];
-
-interface DashboardPageProps {
-  onNavigate?: (page: string) => void;
-  onToggleSidebar?: () => void;
-}
-
-export function DashboardPage({ onNavigate, onToggleSidebar }: DashboardPageProps) {
+export function DashboardPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [incomeSources, setIncomeSources] = useState<any[]>(MOCK_INCOME_SOURCES);
-  const [monthlyData, setMonthlyData] = useState<any[]>(MOCK_MONTHLY_DATA);
+  const [incomeSources, setIncomeSources] = useState<any[]>([]);
+  const [monthlyData, setMonthlyData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('http://localhost:8000/api/dashboard')
-      .then(res => res.json())
-      .then(data => {
-        if (data.incomeSources?.length > 0) setIncomeSources(data.incomeSources);
-        if (data.earningsData?.length > 0) setMonthlyData(data.earningsData);
+      .then(res => {
+        if (!res.ok) throw new Error('Backend not responding');
+        return res.json();
       })
-      .catch(() => console.log("Using static data"));
+      .then(data => {
+        console.log('Dashboard data:', data);
+        setIncomeSources(data.incomeSources || []);
+        setMonthlyData(data.earningsData || []);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error("Failed to fetch dashboard data", err);
+        setError('Unable to connect to backend. Please ensure the backend server is running on port 8000.');
+        setLoading(false);
+      });
   }, []);
 
   const totalEarnings = incomeSources.reduce((sum, source) => sum + source.amount, 0);
@@ -54,115 +37,246 @@ export function DashboardPage({ onNavigate, onToggleSidebar }: DashboardPageProp
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      setUploadMessage(`Uploaded: ${file.name}`);
-      setTimeout(() => setUploadMessage(null), 3000);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      setUploading(true);
+      setUploadMessage(null);
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('doc_type', 'Income Proof');
+
+      try {
+        const response = await fetch('http://localhost:8000/api/verify_document', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          setUploadMessage(`Uploaded: ${file.name}`);
+          // Optionally refresh data here if verification adds a new source immediately
+        } else {
+          setUploadMessage(`Upload failed: ${data.message || 'Unknown error'}`);
+        }
+      } catch (error) {
+        console.error('Error uploading file:', error);
+        setUploadMessage('Error uploading file. Please try again.');
+      } finally {
+        setUploading(false);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+        <Loader2 className="w-12 h-12 animate-spin text-blue-600 mb-4" />
+        <p className="text-gray-600">Loading dashboard...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+        <div className="max-w-md p-8 bg-white rounded-lg shadow-md text-center">
+          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Connection Error</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <Button onClick={() => window.location.reload()} className="bg-blue-600 hover:bg-blue-700">
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-[#0A1F44] min-h-screen font-sans">
-
-      {/* Top Section (Blue) */}
-      <div className="px-6 pt-12 pb-8 text-white">
-        {/* Header Bar */}
-        <div className="flex justify-between items-start mb-8">
-          <div className="flex items-center gap-4">
-            <button
-              className="p-1 -ml-1 active:scale-90 transition-transform"
-              onClick={onToggleSidebar}
-            >
-              <Menu className="w-6 h-6 text-white" />
-            </button>
+    <div className="min-h-screen bg-gray-50">
+      {/* Hero Banner */}
+      <div className="text-white shadow-md mb-8" style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #0A1F44 100%)', borderRadius: '0 0 24px 24px' }}>
+        <div className="max-w-7xl mx-auto px-6 py-16">
+          <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl font-bold leading-none">ArthikSetu</h1>
-              <p className="text-[10px] text-blue-200 mt-0.5 opacity-80 uppercase tracking-widest">Gig Economy Platform</p>
+              <p className="text-sm font-medium text-white mb-2 uppercase tracking-wide" style={{ opacity: 0.9 }}>Total Monthly Earnings</p>
+              <h1 className="text-6xl font-bold mb-2 tracking-tight text-white">
+                ₹{totalEarnings.toLocaleString('en-IN')}
+              </h1>
+              <p className="text-sm text-white flex items-center gap-1 font-light opacity-90">
+                <TrendingUp className="w-4 h-4" />
+                Aggregated from {incomeSources.length} income sources
+              </p>
             </div>
-          </div>
-          <div
-            className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-sm font-bold border border-white/10 active:scale-95 transition-transform"
-            onClick={() => onNavigate && onNavigate('profile')}
-          >
-            RS
+            <div>
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                className="text-white px-8 py-3.5 text-sm font-semibold rounded-lg transition-all flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105"
+                style={{ backgroundColor: '#ff8c42' }}
+                disabled={uploading}
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-5 h-5 mr-2" />
+                    Add Income Proof
+                  </>
+                )}
+              </Button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                onChange={handleFileChange}
+                accept=".pdf,.jpg,.jpeg,.png"
+                style={{ display: 'none' }}
+              />
+            </div>
+            {uploadMessage && (
+              <p className="mt-4 text-sm text-gray-600">{uploadMessage}</p>
+            )}
           </div>
         </div>
-
-        {/* Balance */}
-        <div className="mb-6">
-          <p className="text-blue-200 text-xs font-medium mb-1 opacity-90">Total Monthly Earnings</p>
-          <h2 className="text-5xl font-bold tracking-tight">₹{totalEarnings.toLocaleString('en-IN')}</h2>
-        </div>
-
-        {/* Action Button (White Bar - Fake Input Style) */}
-        <div
-          onClick={() => fileInputRef.current?.click()}
-          className="w-full bg-white text-[#0A1F44] h-12 rounded-xl px-4 flex items-center justify-between shadow-lg cursor-pointer active:scale-95 transition-transform mt-4"
-        >
-          <span className="text-gray-400 text-sm font-medium">Upload Document for Verification...</span>
-          <div className="flex items-center gap-2 text-[#0A1F44] font-semibold text-sm">
-            <Upload className="w-4 h-4" />
-            <span>Add Proof</span>
-          </div>
-        </div>
-        {uploadMessage && <p className="text-center text-xs text-green-400 mt-2">{uploadMessage}</p>}
-
-        <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange} accept=".pdf,.jpg,.png" />
       </div>
 
-      {/* Bottom Sheet (White Content) */}
-      <div className="bg-[#F8F9FA] rounded-t-[32px] px-6 pt-8 pb-32 min-h-[calc(100vh-300px)] animate-in slide-in-from-bottom-10 duration-500">
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-6 py-10">
 
-        {/* Quick Actions Grid */}
-        <div className="grid grid-cols-3 gap-3 mb-8">
-          {[
-            { label: 'Analyzer', id: 'ai-assistant', icon: FileText },
-            { label: 'Decoder', id: 'message-decoder', icon: FileText }, // Distinct icon if available
-            { label: 'Schemes', id: 'schemes', icon: Lock }, // Or Gift
-            { label: 'Verify', id: 'document-verification', icon: ScanFace },
-            { label: 'Tax', id: 'tax', icon: CheckCircle2 }, // Placeholder
-            { label: 'Chatbot', id: 'chatbot', icon: Bot }, // Placeholder
-          ].map((item) => (
-            <button
-              key={item.id}
-              onClick={() => onNavigate && onNavigate(item.id)}
-              className="flex flex-col items-center justify-center bg-white rounded-2xl shadow-sm border border-gray-100 p-4 h-28 active:scale-95 transition-transform"
-            >
-              <item.icon className="w-8 h-8 text-[#0A1F44] mb-3" strokeWidth={1.5} />
-              <span className="text-xs font-semibold text-[#0A1F44] tracking-wide">
-                {item.label}
-              </span>
-            </button>
-          ))}
+        {/* Income Sources */}
+        <div className="mb-10">
+          <h2 className="text-xl font-bold text-gray-900 mb-6">Income Sources</h2>
+          {incomeSources.length === 0 ? (
+            <Card className="p-12 bg-gradient-to-br from-gray-50 to-gray-100 text-center border-2 border-dashed border-gray-300">
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-16 h-16 bg-gradient-to-br from-orange-100 to-orange-200 rounded-full flex items-center justify-center">
+                  <TrendingUp className="w-8 h-8 text-orange-600" />
+                </div>
+                <h3 className="text-xl font-bold text-[#0A1F44]">No Income Sources Yet</h3>
+                <p className="text-gray-600 max-w-md">
+                  Upload your income proof or use SMS Analyzer to start tracking
+                </p>
+              </div>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {incomeSources.map((source, idx) => (
+                <Card key={idx} className="p-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg transition-all transform hover:-translate-y-1">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${source.verified ? 'bg-blue-500' : 'bg-green-500'}`}></div>
+                      <h3 className="text-sm font-medium text-gray-700">{source.name || source.source}</h3>
+                    </div>
+                    {source.verified ? (
+                      <CheckCircle2 className="w-5 h-5 text-green-500" />
+                    ) : (
+                      <AlertCircle className="w-5 h-5 text-gray-400" />
+                    )}
+                  </div>
+                  <p className="text-2xl font-bold text-gray-900 mb-1">
+                    ₹{source.amount.toLocaleString('en-IN')}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {source.verified ? 'Verified' : 'Verified'}
+                  </p>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Stats Grid */}
-        <div className="space-y-4 mb-8">
-          <div className="bg-white p-5 rounded-[24px] shadow-[0_2px_10px_rgba(0,0,0,0.03)] border border-gray-100">
-            <p className="text-sm text-gray-500 font-medium mb-1">Verified Sources</p>
-            <div className="flex justify-between items-center">
-              <p className="text-3xl font-bold text-[#0A1F44]">{incomeSources.filter(i => i.verified).length}</p>
-              <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
-                <CheckCircle2 className="w-5 h-5 text-blue-600" />
-              </div>
-            </div>
+        {/* Earnings Chart */}
+        <Card className="p-8 bg-white border border-gray-200 rounded-xl shadow-sm mb-10">
+          <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+            <TrendingUp className="w-6 h-6 text-gray-700" />
+            Earnings Trend
+          </h3>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={monthlyData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                <XAxis dataKey="month" stroke="#9ca3af" />
+                <YAxis stroke="#9ca3af" tickFormatter={(value) => `₹${(value / 1000)}k`} />
+                <Tooltip
+                  formatter={(value: number) => `₹${value.toLocaleString('en-IN')}`}
+                  contentStyle={{
+                    backgroundColor: 'white',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                  }}
+                />
+                <Bar dataKey="amount" fill="#3b82f6" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
+        </Card>
 
-          <div className="bg-white p-5 rounded-[24px] shadow-[0_2px_10px_rgba(0,0,0,0.03)] border border-gray-100">
-            <p className="text-sm text-gray-500 font-medium mb-1">Growth</p>
-            <div className="flex justify-between items-center">
-              <p className="text-3xl font-bold text-green-600">+1.5%</p>
-              <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-green-600" />
+        {/* AI Features */}
+        <div>
+          <h2 className="text-xl font-bold text-gray-900 mb-6">Features</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className="p-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg transition-all transform hover:-translate-y-1 cursor-pointer">
+              <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mb-4">
+                <TrendingUp className="w-6 h-6 text-orange-600" />
               </div>
-            </div>
-            {/* Mini Chart Area */}
-            <div className="h-12 mt-2 -mx-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={monthlyData}>
-                  <Area type="monotone" dataKey="amount" stroke="#16a34a" fill="#dcfce7" strokeWidth={2} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
+              <h3 className="text-base font-bold text-gray-900 mb-2">Unified Dashboard</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                View earnings across all platforms in one place
+              </p>
+            </Card>
+
+            <Card className="p-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg transition-all transform hover:-translate-y-1 cursor-pointer">
+              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
+                <MessageSquare className="w-6 h-6 text-blue-600" />
+              </div>
+              <h3 className="text-base font-bold text-gray-900 mb-2">SMS Analyzer</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Automatically extract earnings from SMS messages
+              </p>
+            </Card>
+
+            <Card className="p-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg transition-all transform hover:-translate-y-1 cursor-pointer">
+              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-4">
+                <Bot className="w-6 h-6 text-purple-600" />
+              </div>
+              <h3 className="text-base font-bold text-gray-900 mb-2">AI Assistant</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Chat for personalized financial advice
+              </p>
+            </Card>
+
+            <Card className="p-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg transition-all transform hover:-translate-y-1 cursor-pointer">
+              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-4">
+                <FileSearch className="w-6 h-6 text-green-600" />
+              </div>
+              <h3 className="text-base font-bold text-gray-900 mb-2">Message Decoder</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Decode confusing bank and platform messages
+              </p>
+            </Card>
+
+            <Card className="p-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg transition-all transform hover:-translate-y-1 cursor-pointer">
+              <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mb-4">
+                <ShieldCheck className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="text-base font-bold text-gray-900 mb-2">Document Verification</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Verify Aadhaar, PAN, License with AI OCR
+              </p>
+            </Card>
+
+            <Card className="p-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg transition-all transform hover:-translate-y-1 cursor-pointer">
+              <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center mb-4">
+                <Gift className="w-6 h-6 text-indigo-600" />
+              </div>
+              <h3 className="text-base font-bold text-gray-900 mb-2">Government Schemes</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Get personalized scheme recommendations
+              </p>
+            </Card>
           </div>
         </div>
       </div>
