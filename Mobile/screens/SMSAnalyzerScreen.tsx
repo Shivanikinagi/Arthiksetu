@@ -1,239 +1,267 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, Image, PermissionsAndroid, Platform } from 'react-native';
-import { MessageSquare, CreditCard, ArrowRight, ShieldCheck, Banknote, Zap } from 'lucide-react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Platform, PermissionsAndroid, Alert, ActivityIndicator } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Banknote, CreditCard, Smartphone, RefreshCw, BarChart2 } from 'lucide-react-native';
+import { CyberTheme } from '../constants/CyberTheme';
 
-// Try to import the native module safely
+// Import Native SMS Module safely
 let SmsAndroid: any = null;
-try {
-    if (Platform.OS === 'android') {
+if (Platform.OS === 'android') {
+    try {
         SmsAndroid = require('react-native-get-sms-android').default;
+    } catch (e) {
+        console.log("SMS Module missing (likely Expo Go)");
     }
-} catch (e) {
-    console.log("SMS Module not found (likely in Expo Go).");
 }
 
 export default function SMSAnalyzerScreen() {
     const [scanned, setScanned] = useState(false);
-    const [transactions, setTransactions] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
-
-    const MOCK_SMS = [
-        { id: 'm1', sender: 'HDFCBNK', body: 'Rs 12500 credited to a/c 1234. Ref: SWIGGY PAYOUT.', type: 'income', merchant: 'Swiggy', date: 'Today, 2:30 PM', amount: 12500 },
-        { id: 'm2', sender: 'ZOMATO', body: 'Rs 8400 credited to a/c 1234. Weekly Payout.', type: 'income', merchant: 'Zomato', date: 'Yesterday', amount: 8400 },
-        { id: 'm3', sender: 'AMAZON', body: 'Rs 599 debited for purchase. Balance: Rs 1500.', type: 'expense', merchant: 'Amazon', date: '12 Mar', amount: 599 },
-    ];
-
-    const parseSMS = (smsList: any[]) => {
-        const parsed: any[] = [];
-
-        smsList.forEach(sms => {
-            const body = sms.body.toLowerCase();
-            // 1. Detect Financial SMS
-            if (body.includes('credited') || body.includes('debited') || body.includes('spent') || body.includes('sent') || body.includes('received')) {
-
-                // 2. Extract Amount
-                const amountMatch = body.match(/(?:rs\.?|inr)\s*([\d,]+(?:\.\d{1,2})?)/);
-                if (amountMatch) {
-                    const amount = parseFloat(amountMatch[1].replace(/,/g, ''));
-
-                    // 3. Determine Type
-                    const isIncome = body.includes('credited') || body.includes('received');
-
-                    // 4. Extract Merchant/Source
-                    let merchant = "Generic";
-                    if (body.includes('swiggy')) merchant = "Swiggy";
-                    else if (body.includes('zomato')) merchant = "Zomato";
-                    else if (body.includes('uber')) merchant = "Uber";
-                    else if (body.includes('amazon')) merchant = "Amazon";
-                    else if (body.includes('upi')) merchant = "UPI Transfer";
-                    else merchant = sms.address || "Bank"; // Use Sender ID
-
-                    parsed.push({
-                        id: sms._id,
-                        sender: sms.address,
-                        body: sms.body,
-                        type: isIncome ? 'income' : 'expense',
-                        merchant: merchant,
-                        date: new Date(sms.date).toLocaleDateString(),
-                        amount: amount
-                    });
-                }
-            }
-        });
-        return parsed;
-    };
+    const [transactions, setTransactions] = useState<any[]>([]);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
     const runScan = async () => {
         setLoading(true);
+        setErrorMsg(null);
 
-        // 1. Check if we are in a Native Android Environment with the Module
-        const isNativeAndroid = Platform.OS === 'android' && SmsAndroid;
-
-        if (!isNativeAndroid) {
-            // --- SIMULATION MODE (Web, iOS, Expo Go) ---
-            setTimeout(() => {
-                Alert.alert("Simulation Mode", "In Expo Go/Web, we simulate the SMS scan for demo purposes.");
-                setScanned(true);
-                setTransactions(MOCK_SMS);
-                setLoading(false);
-            }, 1000);
+        if (Platform.OS !== 'android') {
+            setLoading(false);
+            Alert.alert("Not Supported", "SMS Analysis works only on Android devices.");
             return;
         }
 
-        // --- REAL MODE (Native Android Build) ---
         try {
             const granted = await PermissionsAndroid.request(
                 PermissionsAndroid.PERMISSIONS.READ_SMS,
                 {
-                    title: "ArthikSetu SMS Permission",
-                    message: "We need access to your SMS to track your earnings automatically.",
-                    buttonNeutral: "Ask Me Later",
-                    buttonNegative: "Cancel",
+                    title: "SMS Access Required",
+                    message: "ArthikSetu needs access to your SMS to track daily earnings automatically.",
                     buttonPositive: "OK"
                 }
             );
 
             if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-                SmsAndroid.list(
-                    JSON.stringify({
-                        box: 'inbox',
-                        maxCount: 200,
-                    }),
-                    (fail: any) => {
-                        console.log('Failed to read SMS: ' + fail);
-                        setLoading(false);
-                        Alert.alert("Error", "Could not read SMS inbox.");
-                    },
-                    (count: any, smsList: string) => {
-                        const arr = JSON.parse(smsList);
-                        const realData = parseSMS(arr);
-
-                        if (realData.length === 0) {
-                            Alert.alert("No Data", "No financial transactions found. Showing demo data.");
-                            setTransactions(MOCK_SMS);
-                        } else {
-                            setTransactions(realData);
-                        }
-
-                        setScanned(true);
-                        setLoading(false);
-                    }
-                );
+                fetchSMS();
             } else {
-                Alert.alert("Permission Denied", "Cannot read SMS without permission.");
                 setLoading(false);
+                Alert.alert("Permission Denied", "Cannot analyze earnings without SMS permission.");
             }
         } catch (err) {
             console.warn(err);
             setLoading(false);
-            Alert.alert("Error", "An error occurred while scanning.");
         }
     };
 
+    const fetchSMS = () => {
+        if (!SmsAndroid) {
+            // Fallback for Simulator/Expo Go
+            setErrorMsg("SMS Module not active in this environment. Using simulation.");
+            simulateScan();
+            return;
+        }
+
+        const filter = {
+            box: 'inbox',
+            maxCount: 100, // Read last 100 SMS
+        };
+
+        SmsAndroid.list(
+            JSON.stringify(filter),
+            (fail: any) => {
+                setLoading(false);
+                Alert.alert("Error", "Failed to read SMS: " + fail);
+            },
+            (count: number, smsList: string) => {
+                const arr = JSON.parse(smsList);
+                processSMS(arr);
+            }
+        );
+    };
+
+    const processSMS = (smsArray: any[]) => {
+        const foundTxns: any[] = [];
+
+        // Simple Regex for Money Detection (Real Logic)
+        const moneyRegex = /(?:rs\.?|inr)\s*(\d+(?:,\d+)*(?:\.\d{1,2})?)|(\d+(?:,\d+)*(?:\.\d{1,2})?)\s*(?:rs\.?|inr)/i;
+
+        smsArray.forEach((sms) => {
+            const body = sms.body.toLowerCase();
+            const sender = sms.address.toLowerCase();
+
+            // Filter for Banking/Gig Keywords
+            if (body.match(/credited|debited|spent|paid|received|txn|acct|bank|swiggy|zomato|uber/)) {
+
+                const amountMatch = body.match(moneyRegex);
+                if (amountMatch) {
+                    const amount = amountMatch[1] || amountMatch[2];
+
+                    let type = 'expense';
+                    if (body.includes('credited') || body.includes('received') || body.includes('refund')) {
+                        type = 'income';
+                    }
+
+                    // Attempt to extract Merchant
+                    let merchant = "Unknown";
+                    if (sender.includes('hdfc')) merchant = "HDFC Bank";
+                    else if (sender.includes('sbi')) merchant = "SBI";
+                    else if (sender.includes('paytm')) merchant = "Paytm";
+                    else if (body.includes('swiggy')) merchant = "Swiggy";
+                    else if (body.includes('zomato')) merchant = "Zomato";
+                    else if (body.includes('uber')) merchant = "Uber";
+                    else merchant = sender; // Fallback
+
+                    foundTxns.push({
+                        id: sms._id,
+                        sender: sms.address,
+                        body: sms.body,
+                        type,
+                        merchant,
+                        date: new Date(sms.date).toLocaleDateString(),
+                        amount: amount.replace(/,/g, '') // Clean amount
+                    });
+                }
+            }
+        });
+
+        setTransactions(foundTxns);
+        setScanned(true);
+        setLoading(false);
+        if (foundTxns.length === 0) {
+            Alert.alert("Analysis Complete", "No financial transactions found in the last 100 messages.");
+        }
+    };
+
+    // Keep simulation as a strictly explicit fallback if module is missing
+    const simulateScan = () => {
+        setTimeout(() => {
+            const MOCK_SMS_REALISTIC = [
+                { id: 'm1', sender: 'HDFCBNK', type: 'income', merchant: 'Swiggy', date: 'Today', amount: 12500 },
+                { id: 'm2', sender: 'ZOMATO', type: 'income', merchant: 'Zomato', date: 'Yesterday', amount: 8400 },
+            ];
+            setTransactions(MOCK_SMS_REALISTIC);
+            setScanned(true);
+            setLoading(false);
+        }, 1500);
+    };
+
     return (
-        <ScrollView style={styles.container}>
-            <Text style={styles.title}>Smart SMS Analyzer</Text>
-            <Text style={styles.subtitle}>AI-Powered Real-Time Tracking</Text>
+        <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
 
-            {!scanned ? (
-                <View style={styles.emptyState}>
-                    <View style={styles.iconCircle}>
-                        <MessageSquare size={48} color="#2563EB" />
-                    </View>
-                    <Text style={styles.emptyTitle}>Zero-Entry Tracking</Text>
-                    <Text style={styles.emptyDesc}>
-                        Our **NLP Engine** automatically parses bank SMS to track your earnings.
-                    </Text>
+            <View style={styles.visualizerContainer}>
+                <Text style={styles.headerTitle}>Scan My SMS Inbox</Text>
 
-                    <View style={styles.featureList}>
-                        <View style={styles.featureItem}>
-                            <ShieldCheck size={16} color="#16A34A" />
-                            <Text style={styles.featureText}>Privacy First: Personal SMS ignored</Text>
-                        </View>
-                        <View style={styles.featureItem}>
-                            <Zap size={16} color="#F59E0B" />
-                            <Text style={styles.featureText}>Real-Device SMS Extraction</Text>
-                        </View>
-                    </View>
-
-                    <TouchableOpacity style={styles.scanBtn} onPress={runScan}>
-                        <Text style={styles.scanBtnText}>{loading ? "Scanning Inbox..." : "Scan My SMS Inbox"}</Text>
-                        {!loading && <ArrowRight color="white" size={18} />}
-                    </TouchableOpacity>
+                <View style={styles.waveContainer}>
+                    {[...Array(19)].map((_, i) => (
+                        <LinearGradient
+                            key={i}
+                            colors={loading ? CyberTheme.colors.gradientAccent : i % 3 === 0 ? CyberTheme.colors.gradientCyan : CyberTheme.colors.gradientPrimary}
+                            style={[
+                                styles.waveBar,
+                                {
+                                    height: loading ? Math.random() * 80 + 20 : 40 + Math.sin(i / 2) * 20,
+                                    opacity: loading ? 1 : 0.6
+                                }
+                            ]}
+                        />
+                    ))}
                 </View>
-            ) : (
-                <View style={styles.resultsContainer}>
-                    <View style={styles.summaryCard}>
-                        <View>
-                            <Text style={styles.summaryLabel}>Detected Earnings</Text>
-                            <Text style={styles.summaryValue}>
-                                ₹{transactions.filter(t => t.type === 'income').reduce((sum: number, t: any) => sum + t.amount, 0).toLocaleString('en-IN')}
-                            </Text>
-                        </View>
-                        <View style={styles.summaryIcon}>
-                            <Banknote size={24} color="#16A34A" />
-                        </View>
+
+                {!scanned || loading ? (
+                    <TouchableOpacity onPress={runScan} disabled={loading} activeOpacity={0.8} style={{ width: '100%', alignItems: 'center' }}>
+                        <LinearGradient
+                            colors={CyberTheme.colors.gradientPrimary}
+                            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                            style={styles.scanBtn}
+                        >
+                            <View style={styles.fingerprintIcon}>
+                                {loading ? <ActivityIndicator size="small" color="white" /> : <Smartphone size={28} color="white" />}
+                            </View>
+                            <Text style={styles.scanBtnText}>{loading ? "Analyzing Inbox..." : "Start Real Scan"}</Text>
+                        </LinearGradient>
+                    </TouchableOpacity>
+                ) : (
+                    <View style={styles.summaryBadge}>
+                        <BarChart2 size={20} color={CyberTheme.colors.success} />
+                        <Text style={styles.summaryText}>Scan Complete • {transactions.length} Found</Text>
                     </View>
+                )}
 
-                    <Text style={styles.sectionHeader}>Latest Transactions</Text>
+                {errorMsg && <Text style={{ color: 'orange', marginTop: 10 }}>{errorMsg}</Text>}
+            </View>
 
-                    {transactions.map(txn => (
+            <View style={styles.resultsSection}>
+                <View style={styles.sectionHeaderRow}>
+                    <Text style={styles.sectionHeader}>Verified Sources</Text>
+                </View>
+
+                {!scanned ? (
+                    <View style={styles.placeholderContainer}>
+                        <Text style={styles.placeholderText}>Tap scan to find real transactions in your inbox.</Text>
+                        <Text style={styles.placeholderSub}>We respect your privacy. Processing happens locally.</Text>
+                    </View>
+                ) : (
+                    transactions.map((txn, index) => (
                         <View key={txn.id} style={styles.txnCard}>
-                            <View style={[styles.txnIcon, { backgroundColor: txn.type === 'income' ? '#DCFCE7' : '#FEE2E2' }]}>
-                                {txn.type === 'income' ? <Banknote size={20} color="#16A34A" /> : <CreditCard size={20} color="#EF4444" />}
+                            <View style={[styles.txnIconBox, { backgroundColor: txn.type === 'income' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)' }]}>
+                                {txn.type === 'income' ? <Banknote size={24} color={CyberTheme.colors.success} /> : <CreditCard size={24} color="#EF4444" />}
                             </View>
-                            <View style={{ flex: 1 }}>
-                                <Text style={styles.txnMerchant}>{txn.merchant}</Text>
-                                <Text style={styles.txnBody} numberOfLines={1}>{txn.body}</Text>
+
+                            <View style={styles.txnInfo}>
+                                <Text style={styles.txnTitle}>{txn.merchant}</Text>
+                                <Text style={styles.txnSub}>{txn.type === 'income' ? 'Income' : 'Expense'} • {txn.date}</Text>
                             </View>
-                            <View style={{ alignItems: 'flex-end' }}>
-                                <Text style={[styles.txnAmount, { color: txn.type === 'income' ? '#16A34A' : '#EF4444' }]}>
+
+                            <View style={[styles.txnAmountBox, { borderColor: txn.type === 'income' ? CyberTheme.colors.success : 'rgba(239, 68, 68, 0.5)' }]}>
+                                <Text style={[styles.txnAmount, { color: txn.type === 'income' ? CyberTheme.colors.success : '#EF4444' }]}>
                                     {txn.type === 'income' ? '+' : '-'} ₹{txn.amount}
                                 </Text>
-                                <Text style={styles.txnDate}>{txn.date}</Text>
                             </View>
                         </View>
-                    ))}
+                    ))
+                )}
+            </View>
 
-                    <TouchableOpacity style={styles.rescanBtn} onPress={runScan}>
-                        <Text style={styles.rescanText}>Sync New SMS</Text>
-                    </TouchableOpacity>
-                </View>
-            )}
         </ScrollView>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, padding: 24, backgroundColor: '#F8F9FA' },
-    title: { fontSize: 24, fontWeight: 'bold', color: '#0A1F44' },
-    subtitle: { color: '#6B7280', marginTop: 8, marginBottom: 32 },
+    container: { flex: 1, backgroundColor: CyberTheme.colors.background },
+    contentContainer: { padding: 24, paddingBottom: 100 },
 
-    emptyState: { alignItems: 'center', backgroundColor: 'white', padding: 32, borderRadius: 24, elevation: 2 },
-    iconCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
-    emptyTitle: { fontSize: 20, fontWeight: 'bold', color: '#1F2937', marginBottom: 12 },
-    emptyDesc: { textAlign: 'center', color: '#6B7280', marginBottom: 32, lineHeight: 22 },
+    visualizerContainer: { alignItems: 'center', marginVertical: 30 },
+    headerTitle: { color: 'white', fontSize: 24, fontWeight: 'bold', marginBottom: 40, letterSpacing: 1 },
 
-    scanBtn: { backgroundColor: '#0A1F44', flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 16, paddingHorizontal: 32, borderRadius: 12, marginBottom: 24 },
-    scanBtnText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
-    featureList: { width: '100%', marginBottom: 24, gap: 12 },
-    featureItem: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#F0FDF4', padding: 12, borderRadius: 8 },
-    featureText: { color: '#166534', fontSize: 13, fontWeight: '600' },
+    waveContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 120, marginBottom: 50 },
+    waveBar: { width: 8, borderRadius: 4, opacity: 0.9 },
 
-    resultsContainer: { gap: 16 },
-    summaryCard: { backgroundColor: '#0A1F44', padding: 24, borderRadius: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-    summaryLabel: { color: '#93C5FD', fontSize: 14, marginBottom: 4 },
-    summaryValue: { color: 'white', fontSize: 32, fontWeight: 'bold' },
-    summaryIcon: { width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
+    scanBtn: {
+        width: '85%', height: 60, borderRadius: 30, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 14,
+        shadowColor: CyberTheme.colors.primary, shadowOpacity: 0.6, shadowRadius: 20, elevation: 12
+    },
+    fingerprintIcon: {},
+    scanBtnText: { color: 'white', fontSize: 18, fontWeight: 'bold', letterSpacing: 1 },
 
-    sectionHeader: { fontSize: 18, fontWeight: 'bold', color: '#1F2937', marginVertical: 8 },
-    txnCard: { backgroundColor: 'white', padding: 16, borderRadius: 16, flexDirection: 'row', alignItems: 'center', gap: 16, elevation: 1 },
-    txnIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-    txnMerchant: { fontSize: 16, fontWeight: 'bold', color: '#1F2937' },
-    txnBody: { fontSize: 12, color: '#6B7280', marginTop: 2, maxWidth: 180 },
-    txnAmount: { fontSize: 16, fontWeight: 'bold' },
-    txnDate: { fontSize: 10, color: '#9CA3AF', marginTop: 4 },
+    summaryBadge: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: 'rgba(16, 185, 129, 0.1)', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 20, borderWidth: 1, borderColor: CyberTheme.colors.success },
+    summaryText: { color: CyberTheme.colors.success, fontWeight: 'bold', fontSize: 14 },
 
-    rescanBtn: { marginTop: 16, alignItems: 'center', padding: 16 },
-    rescanText: { color: '#2563EB', fontWeight: 'bold' }
+    resultsSection: { marginTop: 20 },
+    sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+    sectionHeader: { color: 'white', fontSize: 18, fontWeight: 'bold' },
+
+    placeholderContainer: { alignItems: 'center', marginTop: 20, opacity: 0.7 },
+    placeholderText: { color: 'white', fontWeight: '600', fontSize: 15 },
+    placeholderSub: { color: CyberTheme.colors.textDim, fontSize: 13, marginTop: 6 },
+
+    txnCard: {
+        backgroundColor: CyberTheme.colors.surface, borderRadius: 20, padding: 18, marginBottom: 14,
+        flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)'
+    },
+    txnIconBox: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 18 },
+    txnInfo: { flex: 1 },
+    txnTitle: { color: 'white', fontSize: 16, fontWeight: 'bold' },
+    txnSub: { color: CyberTheme.colors.textDim, fontSize: 12, marginTop: 4 },
+    txnAmountBox: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, borderWidth: 1, backgroundColor: 'rgba(0,0,0,0.2)' },
+    txnAmount: { fontSize: 13, fontWeight: 'bold' },
+
 });

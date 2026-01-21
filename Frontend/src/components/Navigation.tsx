@@ -1,43 +1,115 @@
-import { Home, Bot, User } from 'lucide-react';
+import { Building2, FileText, Gift, BarChart3, User, Bot, Landmark, MessageSquare, FileSearch, ShieldCheck, TrendingUp, Menu, X } from 'lucide-react';
+import { useState } from 'react';
 
 interface NavigationProps {
-  currentPage: string;
-  onNavigate: (page: any) => void;
+  currentPage: 'dashboard' | 'unified-dashboard' | 'sms-analyzer' | 'tax' | 'schemes' | 'loans' | 'reports' | 'profile' | 'ai-assistant' | 'message-decoder' | 'document-verify';
+  onNavigate: (page: 'dashboard' | 'unified-dashboard' | 'sms-analyzer' | 'tax' | 'schemes' | 'loans' | 'reports' | 'profile' | 'ai-assistant' | 'message-decoder' | 'document-verify') => void;
 }
 
 export function Navigation({ currentPage, onNavigate }: NavigationProps) {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   const navItems = [
-    { id: 'dashboard', label: 'Home', icon: Home },
-    { id: 'chatbot', label: 'Chatbot', icon: Bot },
-    { id: 'profile', label: 'Profile', icon: User },
+    { id: 'dashboard' as const, label: 'Dashboard' },
+    { id: 'unified-dashboard' as const, label: 'Unified Dashboard' },
+    { id: 'sms-analyzer' as const, label: 'SMS Analyzer' },
+    { id: 'ai-assistant' as const, label: 'AI Assistant' },
+    { id: 'message-decoder' as const, label: 'Decoder' },
+    { id: 'document-verify' as const, label: 'Verify Docs' },
+    { id: 'tax' as const, label: 'Tax & ITR' },
+    { id: 'schemes' as const, label: 'Schemes' },
+    { id: 'loans' as const, label: 'Loans' },
+    { id: 'reports' as const, label: 'Reports' },
   ];
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100/50 z-50 pb-safe-area-bottom">
-      <div className="flex items-center justify-around h-[80px] px-2 pb-2">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = currentPage === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => onNavigate(item.id)}
-              className="group flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform"
-            >
-              <div className={`
-                mb-1.5 p-1.5 rounded-xl transition-all duration-300
-                ${isActive ? 'bg-[#0A1F44] text-white shadow-lg shadow-[#0A1F44]/20' : 'text-gray-400 group-hover:text-gray-600'}
-              `}>
-                <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
+    <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="flex items-center justify-between h-16">
+          {/* Logo */}
+          <div className="flex items-center space-x-8">
+            <div className="flex items-center space-x-3 cursor-pointer" onClick={() => onNavigate('dashboard')}>
+              <div className="w-10 h-10 bg-[#1e3a5f] rounded-lg flex items-center justify-center shadow-md">
+                <span className="text-white font-bold text-lg">AS</span>
               </div>
-              <span className={`text-[10px] font-semibold tracking-wide ${isActive ? 'text-[#0A1F44]' : 'text-gray-400'
-                }`}>
-                {item.label}
-              </span>
+              <span className="text-xl font-bold bg-gradient-to-r from-[#1e3a5f] to-blue-600 bg-clip-text text-transparent">ArthikSetu</span>
+            </div>
+
+            {/* Desktop Navigation */}
+            <div className="hidden xl:flex items-center space-x-1">
+              {navItems.map((item) => {
+                const isActive = currentPage === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => onNavigate(item.id)}
+                    className={`px-3 py-2 text-sm font-medium rounded-lg transition-all whitespace-nowrap ${
+                      isActive
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Right Actions */}
+          <div className="flex items-center space-x-4">
+            <button 
+              onClick={() => onNavigate('profile')}
+              className="hidden xl:flex items-center px-5 py-2.5 rounded-lg bg-[#1e3a5f] text-white text-sm font-semibold hover:bg-[#2a4a6f] transition-all shadow-md hover:shadow-lg"
+            >
+              <User className="w-4 h-4 mr-2" />
+              Profile
             </button>
-          );
-        })}
+
+            {/* Mobile menu button */}
+            <button 
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="xl:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100"
+            >
+              {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Menu */}
+        {isMobileMenuOpen && (
+          <div className="xl:hidden pb-4 space-y-2">
+            {navItems.map((item) => {
+              const isActive = currentPage === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    onNavigate(item.id);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`w-full text-left px-4 py-2 rounded-lg text-sm font-medium ${
+                    isActive
+                      ? 'bg-blue-50 text-blue-600'
+                      : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
+            <button 
+              onClick={() => {
+                onNavigate('profile');
+                setIsMobileMenuOpen(false);
+              }}
+              className="w-full px-4 py-2 rounded-lg bg-[#1e3a5f] text-white text-sm font-medium"
+            >
+              Profile
+            </button>
+          </div>
+        )}
       </div>
-    </div>
+    </nav>
   );
 }
