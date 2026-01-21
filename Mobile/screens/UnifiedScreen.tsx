@@ -1,141 +1,149 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
-import { ScreenWrapper } from '../components/ScreenWrapper';
-import { GlassCard, SectionTitle } from '../components/GlassComponents';
-import { CheckCircle2, TrendingUp, AlertTriangle } from 'lucide-react-native';
+import { ShoppingBag, Plane, FileText, Smartphone, DollarSign } from 'lucide-react-native';
+import { CyberTheme } from '../constants/CyberTheme';
+import { LinearGradient } from 'expo-linear-gradient';
 
-const PLATFORMS = [
-    { id: 1, name: 'Swiggy', earnings: 12400, color: '#fc8019', percent: 35 },
-    { id: 2, name: 'Zomato', earnings: 8350, color: '#cb202d', percent: 23 },
-    { id: 3, name: 'Uber', earnings: 15200, color: '#22d3ee', percent: 42 },
+const EXPENSES = [
+    { id: '1', category: 'PayPal', amount: '-$80.23', date: 'Today', icon: ShoppingBag, color: CyberTheme.colors.secondary, percent: '20%' },
+    { id: '2', category: 'Received', amount: '+$800.32', date: 'Yesterday', icon: DollarSign, color: CyberTheme.colors.success, percent: '65%' },
+    { id: '3', category: 'Android Shopping', amount: '-$32.00', date: '12 Mar', icon: Smartphone, color: CyberTheme.colors.primary, percent: '10%' },
+    { id: '4', category: 'Travel', amount: '-$20.00', date: '10 Mar', icon: Plane, color: CyberTheme.colors.accent, percent: '5%' },
 ];
 
-const DonutChart = () => {
-    const radius = 70;
-    const strokeWidth = 20;
-    const circumference = 2 * Math.PI * radius;
-    let startAngle = 0;
+export default function UnifiedScreen() {
+    const R = 80; // Increased Radius
+    const C = 2 * Math.PI * R;
+    const strokeWidth = 24; // Thicker Stroke
+
+    const val1 = C * 0.45; // Cyan
+    const val2 = C * 0.30; // Purple
+    const val3 = C * 0.25; // Pink
 
     return (
-        <View style={{ alignItems: 'center', justifyContent: 'center', marginVertical: 20 }}>
-            <Svg width={180} height={180} viewBox="0 0 180 180">
-                <G rotation="-90" origin="90, 90">
-                    {PLATFORMS.map((p, i) => {
-                        const dash = (p.percent / 100) * circumference;
-                        const angle = (p.percent / 100) * 360;
-                        const currentStart = startAngle;
-                        startAngle += angle;
-                        return (
+        <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+
+            <View style={styles.header}>
+                <Text style={styles.title}>Spending Analysis</Text>
+            </View>
+
+            {/* DONUT CHART */}
+            <View style={styles.chartContainer}>
+                <View style={styles.chartWrapper}>
+                    <Svg width="220" height="220" viewBox="0 0 220 220">
+                        <G rotation="-90" origin="110, 110">
+                            {/* Background */}
+                            <Circle cx="110" cy="110" r={R} stroke={CyberTheme.colors.surfaceLight} strokeWidth={strokeWidth} fill="none" />
+
+                            {/* Segments - Brighter Colors */}
                             <Circle
-                                key={p.id}
-                                cx="90" cy="90" r={radius}
-                                stroke={p.color}
-                                strokeWidth={strokeWidth}
-                                fill="transparent"
-                                strokeDasharray={`${dash} ${circumference}`}
-                                strokeDashoffset={-((currentStart / 360) * circumference)}
-                                strokeLinecap="round"
+                                cx="110" cy="110" r={R}
+                                stroke={CyberTheme.colors.secondary} strokeWidth={strokeWidth} fill="none"
+                                strokeDasharray={`${val1} ${C}`} strokeLinecap="round"
                             />
-                        );
-                    })}
-                </G>
-            </Svg>
-            <View style={{ position: 'absolute', alignItems: 'center' }}>
-                <Text style={{ color: '#94a3b8', fontSize: 12 }}>Total</Text>
-                <Text style={{ color: 'white', fontSize: 20, fontWeight: 'bold' }}>₹35.9k</Text>
-            </View>
-        </View>
-    );
-};
-
-export default function UnifiedScreen({ onBack }: { onBack?: () => void }) {
-    const [viewMode, setViewMode] = useState<'chart' | 'list'>('chart');
-
-    return (
-        <ScreenWrapper title="Unified View" subtitle="EARNINGS ANALYTICS" showBack onBack={onBack}>
-
-            <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: 20, gap: 10 }}>
-                <TouchableOpacity onPress={() => setViewMode('chart')} style={[styles.tab, viewMode === 'chart' && styles.activeTab]}>
-                    <Text style={[styles.tabText, viewMode === 'chart' && styles.activeTabText]}>Analytics</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => setViewMode('list')} style={[styles.tab, viewMode === 'list' && styles.activeTab]}>
-                    <Text style={[styles.tabText, viewMode === 'list' && styles.activeTabText]}>Accounts</Text>
-                </TouchableOpacity>
-            </View>
-
-            {viewMode === 'chart' ? (
-                <>
-                    <GlassCard intensity={15} style={{ alignItems: 'center', padding: 10 }}>
-                        <Text style={{ color: '#94a3b8', marginBottom: 10 }}>Platform Diversification</Text>
-                        <DonutChart />
-                        <View style={{ flexDirection: 'row', gap: 20, flexWrap: 'wrap', justifyContent: 'center', marginTop: 10 }}>
-                            {PLATFORMS.map(p => (
-                                <View key={p.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: p.color }} />
-                                    <Text style={{ color: '#cbd5e1', fontSize: 12 }}>{p.name}</Text>
-                                </View>
-                            ))}
-                        </View>
-                    </GlassCard>
-
-                    <SectionTitle title="Insights" />
-                    <View style={{ flexDirection: 'row', gap: 12 }}>
-                        <GlassCard intensity={20} style={{ flex: 1, padding: 16 }}>
-                            <TrendingUp color="#34d399" size={20} style={{ marginBottom: 8 }} />
-                            <Text style={styles.statLabel}>Growth</Text>
-                            <Text style={styles.statValue}>+12%</Text>
-                        </GlassCard>
-                        <GlassCard intensity={20} style={{ flex: 1, padding: 16 }}>
-                            <AlertTriangle color="#f59e0b" size={20} style={{ marginBottom: 8 }} />
-                            <Text style={styles.statLabel}>Risk</Text>
-                            <Text style={styles.statValue}>Low</Text>
-                        </GlassCard>
+                            <Circle
+                                cx="110" cy="110" r={R}
+                                stroke={CyberTheme.colors.primary} strokeWidth={strokeWidth} fill="none"
+                                strokeDasharray={`${val2} ${C}`} strokeDashoffset={-val1} strokeLinecap="round"
+                            />
+                            <Circle
+                                cx="110" cy="110" r={R}
+                                stroke={CyberTheme.colors.accent} strokeWidth={strokeWidth} fill="none"
+                                strokeDasharray={`${val3} ${C}`} strokeDashoffset={-(val1 + val2)} strokeLinecap="round"
+                            />
+                        </G>
+                        {/* Center Text */}
+                    </Svg>
+                    {/* Inner Content Positioned Absolutely */}
+                    <View style={styles.chartCenterOverlay}>
+                        <View style={styles.chartCenterCircle} />
                     </View>
-                </>
-            ) : (
-                <View style={{ gap: 16 }}>
-                    {PLATFORMS.map((p) => (
-                        <GlassCard key={p.id} intensity={15} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-                                <View style={[styles.logoPlaceholder, { borderColor: p.color }]}>
-                                    <Text style={[styles.logoText, { color: p.color }]}>{p.name[0]}</Text>
-                                </View>
-                                <View>
-                                    <Text style={styles.name}>{p.name}</Text>
-                                    <Text style={styles.earnings}>₹{p.earnings.toLocaleString()}</Text>
-                                </View>
-                            </View>
-                            <CheckCircle2 size={20} color="#34d399" />
-                        </GlassCard>
-                    ))}
-                    <GlassCard intensity={10} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderStyle: 'dashed', borderWidth: 1, borderColor: '#475569' }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-                            <View style={[styles.logoPlaceholder, { borderColor: '#475569' }]}>
-                                <Text style={[styles.logoText, { color: '#475569' }]}>+</Text>
-                            </View>
-                            <View>
-                                <Text style={[styles.name, { color: '#94a3b8' }]}>Add Platform</Text>
-                                <Text style={styles.earnings}>Link Shadowfax, Dunzo...</Text>
+                </View>
+
+                {/* Legend - Improved Visibility */}
+                <View style={styles.legendContainer}>
+                    <LegendItem color={CyberTheme.colors.secondary} label="Food" />
+                    <LegendItem color={CyberTheme.colors.primary} label="Others" />
+                    <LegendItem color={CyberTheme.colors.accent} label="Travel" />
+                </View>
+            </View>
+
+            {/* TRANSACTIONS LIST */}
+            <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionHeader}>Transactions</Text>
+                <Text style={styles.filterText}>View All</Text>
+            </View>
+
+            <View style={styles.list}>
+                {EXPENSES.map((item) => (
+                    <View key={item.id} style={styles.txnItem}>
+                        {/* Wrapper for Icon to give it a 'glow' box */}
+                        <View style={[styles.iconBox, { borderColor: item.color, backgroundColor: item.color + '10' }]}>
+                            <item.icon size={22} color={item.color} />
+                        </View>
+
+                        <View style={styles.txnInfo}>
+                            <Text style={styles.txnCat}>{item.category}</Text>
+                            <Text style={styles.txnDate}>{item.date}</Text>
+                        </View>
+
+                        <View style={{ alignItems: 'flex-end' }}>
+                            <Text style={[styles.txnAmount, { color: item.amount.startsWith('+') ? CyberTheme.colors.success : 'white' }]}>
+                                {item.amount}
+                            </Text>
+                            {/* Percentage Badge */}
+                            <View style={[styles.percentBadge, { backgroundColor: item.color + '20' }]}>
+                                <Text style={[styles.percentText, { color: item.color }]}>{item.percent}</Text>
                             </View>
                         </View>
-                    </GlassCard>
-                </View>
-            )}
+                    </View>
+                ))}
+            </View>
 
-        </ScreenWrapper>
+        </ScrollView>
     );
 }
 
+const LegendItem = ({ color, label }: any) => (
+    <View style={styles.legendItem}>
+        <View style={[styles.legendDot, { backgroundColor: color, shadowColor: color, shadowOpacity: 0.8, shadowRadius: 4 }]} />
+        <Text style={styles.legendText}>{label}</Text>
+    </View>
+);
+
 const styles = StyleSheet.create({
-    logoPlaceholder: { width: 44, height: 44, borderRadius: 22, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-    logoText: { fontSize: 18, fontWeight: 'bold' },
-    name: { color: 'white', fontWeight: 'bold', fontSize: 16 },
-    earnings: { color: '#94a3b8', fontSize: 12 },
-    tab: { paddingVertical: 8, paddingHorizontal: 20, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.05)' },
-    activeTab: { backgroundColor: '#22d3ee' },
-    tabText: { color: '#94a3b8', fontWeight: '600' },
-    activeTabText: { color: '#0f172a', fontWeight: 'bold' },
-    statLabel: { color: '#94a3b8', fontSize: 12 },
-    statValue: { color: 'white', fontSize: 18, fontWeight: 'bold' }
+    container: { flex: 1, backgroundColor: CyberTheme.colors.background },
+    content: { padding: 24, paddingBottom: 100 },
+
+    header: { alignItems: 'center', marginBottom: 40 },
+    title: { color: 'white', fontSize: 24, fontWeight: 'bold' },
+
+    chartContainer: { alignItems: 'center', marginBottom: 50 },
+    chartWrapper: { position: 'relative', marginBottom: 30, alignItems: 'center', justifyContent: 'center' },
+    chartCenterOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
+    chartCenterCircle: { width: 100, height: 100, borderRadius: 50, backgroundColor: CyberTheme.colors.background, borderWidth: 4, borderColor: CyberTheme.colors.surface },
+
+    legendContainer: { flexDirection: 'row', justifyContent: 'center', gap: 30 },
+    legendItem: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    legendDot: { width: 10, height: 10, borderRadius: 5 }, // Larger dots
+    legendText: { color: CyberTheme.colors.textSecondary, fontSize: 13, fontWeight: 'bold' },
+
+    sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+    sectionHeader: { color: 'white', fontSize: 18, fontWeight: 'bold' },
+    filterText: { color: CyberTheme.colors.textDim, fontSize: 12, fontWeight: '600' },
+
+    list: { gap: 14 },
+    txnItem: {
+        flexDirection: 'row', alignItems: 'center', backgroundColor: CyberTheme.colors.surface,
+        padding: 18, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)'
+    },
+    iconBox: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 16, borderWidth: 1 },
+    txnInfo: { flex: 1 },
+    txnCat: { color: 'white', fontWeight: 'bold', fontSize: 15 },
+    txnDate: { color: CyberTheme.colors.textDim, fontSize: 13, marginTop: 4 },
+
+    txnAmount: { fontWeight: 'bold', fontSize: 15, marginBottom: 4, textAlign: 'right' },
+    percentBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
+    percentText: { fontSize: 10, fontWeight: 'bold' }
 });
