@@ -141,6 +141,14 @@ export function SMSAnalyzer() {
                         </Card>
                     </div>
 
+ // ... (previous imports)
+                    const [showFraud, setShowFraud] = useState(false);
+
+    // Fraud Detection Logic
+    const fraudAlerts = parsedResults.filter(r => r.type === 'debit' && r.amount > 5000);
+
+                    // ... (rest of component until Result Section) ...
+
                     {/* Results Section */}
                     <div className="space-y-6">
                         <Card className="p-8 bg-white rounded-3xl shadow-lg border border-gray-100 min-h-[600px] flex flex-col relative overflow-hidden">
@@ -149,11 +157,28 @@ export function SMSAnalyzer() {
                                     <div className="w-2 h-8 bg-green-500 rounded-full"></div>
                                     Analysis Results
                                 </h2>
-                                {parsedResults.length > 0 && (
-                                    <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full border border-green-200">
-                                        {parsedResults.length} Transactions Found
-                                    </span>
-                                )}
+                                <div className="flex gap-2">
+                                    <Button
+                                        variant={!showFraud ? "default" : "outline"}
+                                        onClick={() => setShowFraud(false)}
+                                        className={`rounded-xl ${!showFraud ? 'bg-blue-600' : 'text-gray-600'}`}
+                                    >
+                                        Transactions
+                                    </Button>
+                                    <Button
+                                        variant={showFraud ? "destructive" : "outline"}
+                                        onClick={() => setShowFraud(true)}
+                                        className={`rounded-xl ${showFraud ? 'bg-red-600' : 'text-gray-600 border-red-200 hover:bg-red-50 hover:text-red-600'}`}
+                                    >
+                                        <AlertTriangle className="w-4 h-4 mr-2" />
+                                        Fraud Guard
+                                        {fraudAlerts.length > 0 && (
+                                            <span className="ml-2 bg-white text-red-600 px-1.5 py-0.5 rounded-full text-xs font-bold">
+                                                {fraudAlerts.length}
+                                            </span>
+                                        )}
+                                    </Button>
+                                </div>
                             </div>
 
                             {parsedResults.length === 0 ? (
@@ -166,78 +191,122 @@ export function SMSAnalyzer() {
                                 </div>
                             ) : (
                                 <div className="flex-1 flex flex-col">
-                                    {/* Summary Banner */}
-                                    {parsedResults.length > 0 && (
-                                        <div className="mb-6 p-6 bg-gradient-to-br from-[#0A1F44] to-[#1e3a5f] rounded-2xl shadow-md text-white border-0 flex items-center justify-between relative overflow-hidden">
-                                            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 grayscale"></div>
-                                            <div className="relative z-10 flex items-center gap-4">
-                                                <div className="p-3 bg-white/10 rounded-xl backdrop-blur-sm">
-                                                    <DollarSign className="w-6 h-6 text-green-400" />
+                                    {showFraud ? (
+                                        /* FRAUD ALERTS VIEW */
+                                        <div className="space-y-4">
+                                            {fraudAlerts.length === 0 ? (
+                                                <div className="text-center py-12">
+                                                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                        <CheckCircle className="w-8 h-8 text-green-600" />
+                                                    </div>
+                                                    <h3 className="text-xl font-bold text-gray-900">All Safe</h3>
+                                                    <p className="text-gray-500">No high-risk transactions detected.</p>
                                                 </div>
-                                                <div>
-                                                    <p className="text-sm text-blue-200 font-medium uppercase tracking-wide">Total Earnings Detected</p>
-                                                    <p className="text-3xl font-black heading-display">
-                                                        ₹{parsedResults.reduce((sum, r) => sum + (r.amount || 0), 0).toLocaleString('en-IN')}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    <div className="space-y-4 max-h-[450px] overflow-y-auto custom-scrollbar pr-2">
-                                        {parsedResults.map((result, idx) => (
-                                            <div key={idx} className="stagger-item group p-5 bg-white rounded-2xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all relative overflow-hidden">
-                                                <div className={`absolute top-0 left-0 bottom-0 w-1.5 ${result.type === 'credit' ? 'bg-green-500' :
-                                                        result.type === 'debit' ? 'bg-red-500' : 'bg-gray-400'
-                                                    }`}></div>
-
-                                                <div className="flex flex-col gap-3 pl-3">
-                                                    <div className="flex items-start justify-between">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${result.merchant ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-500'
-                                                                }`}>
-                                                                <Building2 className="w-5 h-5" />
+                                            ) : (
+                                                fraudAlerts.map((result, idx) => (
+                                                    <div key={idx} className="p-5 bg-red-50 rounded-2xl border border-red-200 relative overflow-hidden">
+                                                        <div className="flex items-start gap-4">
+                                                            <div className="w-12 h-12 bg-red-100 text-red-600 rounded-xl flex items-center justify-center shrink-0">
+                                                                <AlertTriangle className="w-6 h-6" />
                                                             </div>
-                                                            <div>
-                                                                <h4 className="font-bold text-gray-900">
-                                                                    {result.merchant || 'Unknown Merchant'}
-                                                                </h4>
-                                                                <div className="flex items-center gap-2 text-xs text-gray-500">
-                                                                    <Calendar className="w-3 h-3" />
-                                                                    {result.date || 'Date not found'}
+                                                            <div className="flex-1">
+                                                                <div className="flex justify-between items-start">
+                                                                    <div>
+                                                                        <h4 className="font-bold text-gray-900">High Value Debit</h4>
+                                                                        <p className="text-sm text-red-600 font-medium">Potential Fraud Risk</p>
+                                                                    </div>
+                                                                    <p className="text-xl font-bold text-red-600">-₹{result.amount?.toLocaleString('en-IN')}</p>
+                                                                </div>
+                                                                <p className="text-sm text-gray-700 mt-2 bg-white/50 p-2 rounded-lg border border-red-100">
+                                                                    "{result.raw}"
+                                                                </p>
+                                                                <div className="mt-4 flex gap-3">
+                                                                    <Button size="sm" variant="destructive" className="w-full sm:w-auto">Report Issue</Button>
+                                                                    <Button size="sm" variant="outline" className="w-full sm:w-auto bg-white hover:bg-red-50 text-red-600 border-red-200">Not Fraud</Button>
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        <div className="text-right">
-                                                            <p className={`text-xl font-bold ${result.amount > 0 ? 'text-green-600' : 'text-gray-900'
-                                                                }`}>
-                                                                ₹{result.amount?.toLocaleString('en-IN') || 0}
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    ) : (
+                                        /* NORMAL VIEW */
+                                        <>
+                                            {/* Summary Banner */}
+                                            {parsedResults.length > 0 && (
+                                                <div className="mb-6 p-6 bg-gradient-to-br from-[#0A1F44] to-[#1e3a5f] rounded-2xl shadow-md text-white border-0 flex items-center justify-between relative overflow-hidden">
+                                                    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 grayscale"></div>
+                                                    <div className="relative z-10 flex items-center gap-4">
+                                                        <div className="p-3 bg-white/10 rounded-xl backdrop-blur-sm">
+                                                            <DollarSign className="w-6 h-6 text-green-400" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm text-blue-200 font-medium uppercase tracking-wide">Total Earnings Detected</p>
+                                                            <p className="text-3xl font-black heading-display">
+                                                                ₹{parsedResults.reduce((sum, r) => sum + (r.amount || 0), 0).toLocaleString('en-IN')}
                                                             </p>
-                                                            <span className="text-xs font-semibold text-gray-400 uppercase bg-gray-100 px-2 py-0.5 rounded-full">
-                                                                {result.type || 'Unknown'}
-                                                            </span>
                                                         </div>
                                                     </div>
-
-                                                    <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
-                                                        <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1 flex items-center gap-1">
-                                                            <Sparkles className="w-3 h-3 text-purple-500" /> AI Analysis
-                                                        </p>
-                                                        <p className="text-sm text-gray-700 leading-snug">
-                                                            {result.description || "No description available."}
-                                                        </p>
-                                                    </div>
-
-                                                    {result.error && (
-                                                        <div className="mt-2 flex items-start gap-2 text-xs text-red-600 bg-red-50 p-2 rounded-lg">
-                                                            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                                                            {result.error}
-                                                        </div>
-                                                    )}
                                                 </div>
+                                            )}
+
+                                            <div className="space-y-4 max-h-[450px] overflow-y-auto custom-scrollbar pr-2">
+                                                {parsedResults.map((result, idx) => (
+                                                    <div key={idx} className="stagger-item group p-5 bg-white rounded-2xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all relative overflow-hidden">
+                                                        <div className={`absolute top-0 left-0 bottom-0 w-1.5 ${result.type === 'credit' ? 'bg-green-500' :
+                                                            result.type === 'debit' ? 'bg-red-500' : 'bg-gray-400'
+                                                            }`}></div>
+
+                                                        <div className="flex flex-col gap-3 pl-3">
+                                                            <div className="flex items-start justify-between">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${result.merchant ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-500'
+                                                                        }`}>
+                                                                        <Building2 className="w-5 h-5" />
+                                                                    </div>
+                                                                    <div>
+                                                                        <h4 className="font-bold text-gray-900">
+                                                                            {result.merchant || 'Unknown Merchant'}
+                                                                        </h4>
+                                                                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                                                                            <Calendar className="w-3 h-3" />
+                                                                            {result.date || 'Date not found'}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="text-right">
+                                                                    <p className={`text-xl font-bold ${result.amount > 0 ? 'text-green-600' : 'text-gray-900'
+                                                                        }`}>
+                                                                        ₹{result.amount?.toLocaleString('en-IN') || 0}
+                                                                    </p>
+                                                                    <span className="text-xs font-semibold text-gray-400 uppercase bg-gray-100 px-2 py-0.5 rounded-full">
+                                                                        {result.type || 'Unknown'}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                                                <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1 flex items-center gap-1">
+                                                                    <Sparkles className="w-3 h-3 text-purple-500" /> AI Analysis
+                                                                </p>
+                                                                <p className="text-sm text-gray-700 leading-snug">
+                                                                    {result.description || "No description available."}
+                                                                </p>
+                                                            </div>
+
+                                                            {result.error && (
+                                                                <div className="mt-2 flex items-start gap-2 text-xs text-red-600 bg-red-50 p-2 rounded-lg">
+                                                                    <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                                                                    {result.error}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))}
                                             </div>
-                                        ))}
-                                    </div>
+                                        </>
+                                    )}
                                 </div>
                             )}
                         </Card>
