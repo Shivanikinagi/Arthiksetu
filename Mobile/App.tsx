@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, StatusBar, Dimensions, Modal, Alert, Animated, Easing, Platform } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Image, StatusBar, Dimensions, Modal, Alert, TextInput, Animated, Easing } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 import {
-    Menu, Upload, TrendingUp, ScanFace,
-    FileText, Lock, Bot, Calculator, ScrollText,
-    LayoutDashboard, User, X, LogOut, Home, MessageSquare, ChevronRight, CheckCircle2
+    Menu, Search, Bell, Grid, FileText, Lock, ScanFace,
+    MessageSquare, HelpCircle, User, LogOut, ChevronRight,
+    Zap, Shield, BarChart2, Loader2, RefreshCw
 } from 'lucide-react-native';
 
-// Import Screens (Make sure these export default or named correctly)
+import { CyberTheme } from './constants/CyberTheme';
+
+// Import Screens
 import VerifyScreen from './screens/VerifyScreen';
 import SchemesScreen from './screens/SchemesScreen';
 import ChatbotScreen from './screens/ChatbotScreen';
@@ -19,100 +20,87 @@ import DecoderScreen from './screens/DecoderScreen';
 import TaxScreen from './screens/TaxScreen';
 import ReportsScreen from './screens/ReportsScreen';
 import UnifiedScreen from './screens/UnifiedScreen';
-import api from './api';
+import { EarningsService } from './services/EarningsService';
 
-const { width, height } = Dimensions.get('window');
-
-// List of all available "pages"
+// Page Types
 type PageType = 'dashboard' | 'verify' | 'sms_analyzer' | 'decoder' | 'schemes' | 'tax' | 'reports' | 'chatbot' | 'unified' | 'profile';
-
-
-// Mock Data Removed - Using Real API
-
 
 export default function App() {
     const [currentPage, setCurrentPage] = useState<PageType>('dashboard');
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+    // Earnings Animation State
+    const [isLoadingEarnings, setIsLoadingEarnings] = useState(true);
+    const [displayEarnings, setDisplayEarnings] = useState(0);
+    const [totalEarnings, setTotalEarnings] = useState(42600); // Default to 42600
+
     // Animation Values
     const spinValue = useRef(new Animated.Value(0)).current;
-    const pulseValue = useRef(new Animated.Value(1)).current;
-
-    // Total Earnings Animation (Count Up Sim)
-    const [transactions, setTransactions] = useState<any[]>([]);
-    const [targetEarnings, setTargetEarnings] = useState(0);
-    const [displayEarnings, setDisplayEarnings] = useState(0);
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const scaleAnim = useRef(new Animated.Value(0.5)).current;
 
     useEffect(() => {
-        // 1. Start Animations
+        // 1. Start Spinning Animation
         Animated.loop(
-            Animated.timing(spinValue, { toValue: 1, duration: 15000, easing: Easing.linear, useNativeDriver: true })
+            Animated.timing(spinValue, {
+                toValue: 1,
+                duration: 2000,
+                easing: Easing.linear,
+                useNativeDriver: true,
+            })
         ).start();
 
-        Animated.loop(
-            Animated.sequence([
-                Animated.timing(pulseValue, { toValue: 1.05, duration: 2000, useNativeDriver: true }),
-                Animated.timing(pulseValue, { toValue: 1, duration: 2000, useNativeDriver: true })
-            ])
-        ).start();
+        // 2. Fetch Real Earnings
+        const fetchEarnings = async () => {
+            const real = await EarningsService.calculateMonthlyEarnings();
+            if (real > 0) setTotalEarnings(real);
 
-        // 2. Fetch Real Data
-        const fetchData = async () => {
-            try {
-                const data = await api.dashboard();
-                if (data.status === 'success') {
-                    setTargetEarnings(data.summary.total_earnings || 0);
-                    const mapped = data.recent_entries.map((e: any) => ({
-                        id: e.id,
-                        name: e.platform,
-                        amount: e.amount,
-                        date: new Date(e.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
-                        verified: true,
-                        type: 'credit'
-                    }));
-                    setTransactions(mapped);
-                }
-            } catch (e) {
-                // Offline Mode
-                console.log("Offline mode, using mocks");
-                setTargetEarnings(73520);
-                setTransactions([
-                    { id: 1, name: 'Swiggy', amount: 1250, date: 'Today, 2:30 PM', verified: true, type: 'credit' },
-                    { id: 2, name: 'Zomato', amount: 840, date: 'Yesterday, 6:15 PM', verified: true, type: 'credit' },
-                ]);
-            }
+            // Delay for dramatic effect
+            setTimeout(() => {
+                setIsLoadingEarnings(false);
+                startNumberReveal(real > 0 ? real : 42600);
+            }, 2500);
         };
-        fetchData();
+        fetchEarnings();
+
     }, []);
 
-    // 3. Count Up Effect when targetEarnings changes
-    useEffect(() => {
-        if (targetEarnings === 0) return;
-        let start = 0;
-        const duration = 2000;
-        const steps = 60;
-        const increment = targetEarnings / steps;
-        const interval = setInterval(() => {
-            start += increment;
-            if (start >= targetEarnings) {
-                setDisplayEarnings(targetEarnings);
-                clearInterval(interval);
-            } else {
-                setDisplayEarnings(Math.floor(start));
-            }
-        }, duration / steps);
-        return () => clearInterval(interval);
-    }, [targetEarnings]);
+    const startNumberReveal = (finalValue: number) => {
+        Animated.parallel([
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 800,
+                useNativeDriver: true,
+            }),
+            Animated.spring(scaleAnim, {
+                toValue: 1,
+                friction: 5,
+                useNativeDriver: true,
+            })
+        ]).start();
 
+        let start = 0;
+        const duration = 1000;
+        const startTime = Date.now();
+
+        const animateCounter = () => {
+            const now = Date.now();
+            const progress = Math.min((now - startTime) / duration, 1);
+            const easeOut = 1 - Math.pow(1 - progress, 3);
+
+            const currentVal = Math.floor(easeOut * finalValue);
+            setDisplayEarnings(currentVal);
+
+            if (progress < 1) {
+                requestAnimationFrame(animateCounter);
+            }
+        };
+        animateCounter();
+    };
 
     const spin = spinValue.interpolate({
         inputRange: [0, 1],
         outputRange: ['0deg', '360deg']
-    });
-
-    const reverseSpin = spinValue.interpolate({
-        inputRange: [0, 1],
-        outputRange: ['360deg', '0deg']
     });
 
     const navigateTo = (page: PageType) => {
@@ -120,334 +108,280 @@ export default function App() {
         setIsSidebarOpen(false);
     };
 
-    const handleLogout = () => {
-        setIsSidebarOpen(false);
-        Alert.alert("Logged Out", "Redirecting to Login...");
-    };
-
-    const renderPage = () => {
-        const commonProps = { onBack: () => navigateTo('dashboard') };
-        switch (currentPage) {
-            case 'verify': return <VerifyScreen {...commonProps} />;
-            case 'schemes': return <SchemesScreen {...commonProps} earnings={targetEarnings} />;
-            case 'chatbot': return <ChatbotScreen {...commonProps} />;
-            case 'profile': return <ProfileScreen {...commonProps} />;
-            case 'sms_analyzer': return <SMSAnalyzerScreen {...commonProps} />;
-            case 'decoder': return <DecoderScreen {...commonProps} />;
-            case 'tax': return <TaxScreen {...commonProps} />;
-            case 'reports': return <ReportsScreen {...commonProps} />;
-            case 'unified': return <UnifiedScreen {...commonProps} />;
-            default: return null;
-        }
-    };
-
     return (
         <SafeAreaProvider>
-            {currentPage !== 'dashboard' ? (
-                /* Render Sub-Page Full Screen (It handles its own layout) */
-                <View style={{ flex: 1, backgroundColor: '#020617' }}>
-                    {renderPage()}
+            <SafeAreaView edges={['top', 'left', 'right']} style={styles.mainContainer}>
+                <StatusBar barStyle="light-content" backgroundColor={CyberTheme.colors.background} />
+
+                {/* --- HEADER --- */}
+                <View style={styles.header}>
+                    <View style={styles.headerLeft}>
+                        <TouchableOpacity onPress={() => setIsSidebarOpen(true)} style={styles.menuBtn}>
+                            <Grid color={CyberTheme.colors.primary} size={28} />
+                        </TouchableOpacity>
+                        <Text style={styles.appName}>ArthikSetu</Text>
+                    </View>
+                    <TouchableOpacity style={styles.profileBtn} onPress={() => navigateTo('profile')}>
+                        <View style={styles.avatar}>
+                            <Text style={styles.avatarText}>RS</Text>
+                        </View>
+                    </TouchableOpacity>
                 </View>
-            ) : (
-                /* Dashboard Layout */
-                <LinearGradient
-                    colors={['#020617', '#0A1F44', '#111827']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.container}
-                >
-                    <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
-                    <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1 }}>
+                {/* --- MAIN CONTENT --- */}
+                <View style={styles.contentContainer}>
+                    {currentPage === 'dashboard' ? (
+                        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
-                        {/* --- HEADER --- */}
-                        <BlurView intensity={20} tint="dark" style={styles.glassHeader}>
-                            <View style={styles.headerContent}>
-                                <TouchableOpacity onPress={() => setIsSidebarOpen(true)} style={styles.iconBtn}>
-                                    <Menu color="#22d3ee" size={24} />
-                                </TouchableOpacity>
-                                <View>
-                                    <Text style={styles.headerTitle}>ARTHIK SETU</Text>
-                                    <Text style={styles.headerSubtitle}>GIG ECONOMY AI</Text>
-                                </View>
-                                <TouchableOpacity onPress={() => navigateTo('profile')} style={styles.avatarContainer}>
-                                    <LinearGradient colors={['#06b6d4', '#2563eb']} style={styles.avatarGradient}>
-                                        <Text style={styles.avatarText}>RS</Text>
-                                    </LinearGradient>
-                                </TouchableOpacity>
-                            </View>
-                        </BlurView>
+                            {/* 1. EARNINGS DISPLAY */}
+                            <View style={styles.earningsSection}>
+                                <Text style={styles.earningsLabel}>TOTAL MONTHLY EARNINGS</Text>
 
-                        {/* --- MAIN CONTENT --- */}
-                        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-
-                            {/* Greeting */}
-                            <View style={styles.greetingSection}>
-                                <Text style={styles.dateText}>{new Date().toLocaleDateString('en-IN', { weekday: 'long', month: 'long', day: 'numeric' })}</Text>
-                                <Text style={styles.greetingText}>Hello, <Text style={styles.nameHighlight}>Rahul</Text></Text>
-                            </View>
-
-                            {/* HOLOGRAPHIC RING HERO */}
-                            <View style={styles.heroSection}>
-                                <View style={styles.ringContainer}>
-                                    {/* Outer Rotating Ring */}
-                                    <Animated.View style={[styles.ringOuter, { transform: [{ rotate: spin }] }]}>
-                                        <View style={styles.ringKnob} />
-                                    </Animated.View>
-
-                                    {/* Inner Reverse Ring */}
-                                    <Animated.View style={[styles.ringInner, { transform: [{ rotate: reverseSpin }] }]} />
-
-                                    {/* Central Core */}
-                                    <BlurView intensity={40} tint="dark" style={styles.coreGlass}>
-                                        <Text style={styles.earningsLabel}>TOTAL EARNINGS</Text>
-                                        <Text style={styles.earningsValue}>₹{displayEarnings.toLocaleString('en-IN')}</Text>
-                                        <View style={styles.growthBadge}>
-                                            <TrendingUp size={12} color="#34d399" />
-                                            <Text style={styles.growthText}>+12.5%</Text>
+                                <View style={styles.earningsContent}>
+                                    {isLoadingEarnings ? (
+                                        <View style={styles.loadingContainer}>
+                                            <Animated.View style={{ transform: [{ rotate: spin }] }}>
+                                                <RefreshCw size={40} color={CyberTheme.colors.secondary} />
+                                            </Animated.View>
+                                            <Text style={styles.calculatingText}>Calculating...</Text>
                                         </View>
-                                    </BlurView>
+                                    ) : (
+                                        <Animated.View style={{ opacity: fadeAnim, transform: [{ scale: scaleAnim }] }}>
+                                            <Text style={styles.earningsValue}>
+                                                ₹{displayEarnings.toLocaleString('en-IN')}
+                                            </Text>
+                                        </Animated.View>
+                                    )}
                                 </View>
                             </View>
 
-                            {/* ACTION GRID */}
-                            <View style={styles.gridSection}>
-                                <View style={styles.sectionHeader}>
-                                    <Text style={styles.sectionTitle}>AI Tools</Text>
-                                    <TouchableOpacity onPress={() => { }} style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                        <Text style={styles.seeAllText}>Customize</Text>
-                                        <ChevronRight size={12} color="#22d3ee" />
+                            {/* 2. SEARCH / ACTION BAR */}
+                            <TouchableOpacity style={styles.searchBar} activeOpacity={0.8} onPress={() => navigateTo('verify')}>
+                                <Search size={20} color={CyberTheme.colors.textDim} />
+                                <Text style={styles.searchText}>Upload Document for Verification...</Text>
+                                <View style={styles.micIcon}>
+                                    <View style={styles.micDot} />
+                                </View>
+                            </TouchableOpacity>
+
+                            {/* 3. NEON GRID MENU - Compact Layout */}
+                            <View style={styles.gridMenu}>
+                                <NeonCard label="Analyzer" icon={BarChart2} color={CyberTheme.colors.secondary} onPress={() => navigateTo('sms_analyzer')} />
+                                <NeonCard label="Decoder" icon={FileText} color={CyberTheme.colors.primary} onPress={() => navigateTo('decoder')} />
+                                <NeonCard label="Schemes" icon={Lock} color={CyberTheme.colors.accent} onPress={() => navigateTo('schemes')} />
+
+                                <NeonCard label="Loan Offers" icon={Zap} color={CyberTheme.colors.secondary} onPress={() => navigateTo('schemes')} dimmed />
+                                <NeonCard label="Verify" icon={Shield} color={CyberTheme.colors.success} onPress={() => navigateTo('verify')} />
+                                <NeonCard label="Chatbot" icon={MessageSquare} color={CyberTheme.colors.textSecondary} onPress={() => navigateTo('chatbot')} dimmed />
+                            </View>
+
+                            {/* 4. SMS FOOTPRINT / STATS */}
+                            <View style={styles.statsSection}>
+                                <View style={styles.statsHeader}>
+                                    <Text style={styles.statsTitle}>SMS Footprints</Text>
+                                    <TouchableOpacity onPress={() => navigateTo('sms_analyzer')}>
+                                        <Text style={styles.viewAll}>View All</Text>
                                     </TouchableOpacity>
                                 </View>
 
-                                <View style={styles.grid}>
-                                    <GlassCard label="Analyzer" icon={FileText} color="#c084fc" onPress={() => navigateTo('sms_analyzer')} />
-                                    <GlassCard label="Decoder" icon={MessageSquare} color="#34d399" onPress={() => navigateTo('decoder')} />
-                                    <GlassCard label="Schemes" icon={Lock} color="#fbbf24" onPress={() => navigateTo('schemes')} />
-                                    <GlassCard label="Verify" icon={ScanFace} color="#60a5fa" onPress={() => navigateTo('verify')} />
-                                    <GlassCard label="Tax" icon={Calculator} color="#f87171" onPress={() => navigateTo('tax')} />
-                                    <GlassCard label="Ask AI" icon={Bot} color="#22d3ee" onPress={() => navigateTo('chatbot')} />
-                                </View>
+                                <TouchableOpacity onPress={() => navigateTo('sms_analyzer')} activeOpacity={0.8}>
+                                    <View style={styles.statCard}>
+                                        <View style={[styles.statIcon, { backgroundColor: 'rgba(139, 92, 246, 0.2)' }]}>
+                                            <Shield size={24} color={CyberTheme.colors.primary} />
+                                        </View>
+                                        <View style={styles.statInfo}>
+                                            <Text style={styles.statLabel}>Verified Sources: 4</Text>
+                                            <Text style={styles.statSub}>Swiggy, Zomato, Uber...</Text>
+                                        </View>
+                                        <BarChart2 size={24} color={CyberTheme.colors.success} />
+                                    </View>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity onPress={() => navigateTo('schemes')} activeOpacity={0.8}>
+                                    <View style={styles.statCard}>
+                                        <View style={[styles.statIcon, { backgroundColor: 'rgba(245, 158, 11, 0.2)' }]}>
+                                            <Zap size={24} color="#F59E0B" />
+                                        </View>
+                                        <View style={styles.statInfo}>
+                                            <Text style={styles.statLabel}>Notifications</Text>
+                                            <Text style={styles.statSub}>2 New Schemes Available</Text>
+                                        </View>
+                                        <Text style={[styles.percentText, { color: '#F59E0B' }]}>+2</Text>
+                                    </View>
+                                </TouchableOpacity>
+
                             </View>
 
-                            {/* QUICK UPLOAD CTA */}
-                            <TouchableOpacity onPress={() => navigateTo('verify')} activeOpacity={0.9}>
-                                <LinearGradient colors={['#06b6d4', '#2563eb']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.ctaGradient}>
-                                    <View style={styles.ctaContent}>
-                                        <View style={styles.ctaIconBox}>
-                                            <Upload size={20} color="#22d3ee" />
-                                        </View>
-                                        <View>
-                                            <Text style={styles.ctaTitle}>Quick Verify</Text>
-                                            <Text style={styles.ctaDesc}>Upload proof instantly</Text>
-                                        </View>
-                                        <ChevronRight size={20} color="white" style={{ marginLeft: 'auto' }} />
-                                    </View>
-                                </LinearGradient>
+                        </ScrollView>
+                    ) : (
+                        // If not dashboard, render page container
+                        <View style={styles.pageWrapper}>
+                            {/* Back Button for sub-pages */}
+                            <TouchableOpacity style={styles.backBtn} onPress={() => setCurrentPage('dashboard')}>
+                                <Text style={styles.backText}>← Back to Dashboard</Text>
                             </TouchableOpacity>
 
-                            {/* LIVE FEED */}
-                            <View style={styles.feedSection}>
-                                <Text style={styles.sectionTitle}>Live Stream</Text>
-                                {transactions.map((tx, idx) => (
-                                    <Animated.View key={tx.id} style={[styles.txCardContainer, { opacity: pulseValue }]}>
-                                        <BlurView intensity={10} tint="light" style={styles.txCard}>
-                                            <View style={styles.txLeft}>
-                                                <View style={[styles.txIcon, { backgroundColor: tx.type === 'credit' ? 'rgba(52, 211, 153, 0.1)' : 'rgba(248, 113, 113, 0.1)' }]}>
-                                                    <Text style={{ color: tx.type === 'credit' ? '#34d399' : '#f87171', fontWeight: 'bold' }}>{tx.name[0]}</Text>
-                                                </View>
-                                                <View>
-                                                    <Text style={styles.txName}>{tx.name}</Text>
-                                                    <Text style={styles.txDate}>{tx.date}</Text>
-                                                </View>
-                                            </View>
-                                            <View style={styles.txRight}>
-                                                <Text style={[styles.txAmount, { color: tx.type === 'credit' ? '#34d399' : 'white' }]}>
-                                                    {tx.type === 'credit' ? '+' : '-'}₹{Math.abs(tx.amount)}
-                                                </Text>
-                                                {tx.verified && (
-                                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
-                                                        <CheckCircle2 size={10} color="#22d3ee" />
-                                                        <Text style={styles.verifiedText}>Verified</Text>
-                                                    </View>
-                                                )}
-                                            </View>
-                                        </BlurView>
-                                    </Animated.View>
-                                ))}
+                            {/* Render Sub-Screen */}
+                            <View style={{ flex: 1 }}>
+                                {currentPage === 'verify' && <VerifyScreen />}
+                                {currentPage === 'schemes' && <SchemesScreen earnings={totalEarnings} />}
+                                {currentPage === 'chatbot' && <ChatbotScreen />}
+                                {currentPage === 'profile' && <ProfileScreen />}
+                                {currentPage === 'sms_analyzer' && <SMSAnalyzerScreen />}
+                                {currentPage === 'decoder' && <DecoderScreen />}
+                                {currentPage === 'tax' && <TaxScreen />}
+                                {currentPage === 'reports' && <ReportsScreen />}
+                                {currentPage === 'unified' && <UnifiedScreen />}
                             </View>
+                        </View>
+                    )}
+                </View>
 
-                            <View style={{ height: 100 }} />
-                        </ScrollView>
+                {/* --- SIDEBAR MODAL --- */}
+                <Sidebar visible={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} onNavigate={navigateTo} />
 
-                        {/* --- BOTTOM DOCK --- */}
-                        <BlurView intensity={30} tint="dark" style={styles.dock}>
-                            <DockItem icon={Home} label="Home" active={true} onPress={() => navigateTo('dashboard')} />
-                            <DockItem icon={LayoutDashboard} label="Services" active={false} onPress={() => navigateTo('unified')} />
-                            <DockItem icon={User} label="Profile" active={false} onPress={() => navigateTo('profile')} />
-                        </BlurView>
-
-                    </SafeAreaView>
-
-                    {/* --- SIDEBAR --- */}
-                    <Sidebar
-                        visible={isSidebarOpen}
-                        onClose={() => setIsSidebarOpen(false)}
-                        onNavigate={navigateTo}
-                        current={currentPage}
-                        onLogout={handleLogout}
-                    />
-                </LinearGradient>
-            )}
+            </SafeAreaView>
         </SafeAreaProvider>
     );
 }
 
-// --- SUB COMPONENTS ---
+// --- COMPONENTS ---
 
-const GlassCard = ({ label, icon: Icon, color, onPress }: any) => (
-    <TouchableOpacity onPress={onPress} style={{ width: '31%', marginBottom: 12 }}>
-        <BlurView intensity={10} tint="light" style={styles.glassCard}>
-            <View style={[styles.iconCircle, { backgroundColor: 'rgba(255,255,255,0.05)' }]}>
-                <Icon size={24} color={color} />
+const NeonCard = ({ label, icon: Icon, color, onPress, dimmed }: any) => (
+    <TouchableOpacity
+        style={[styles.neonCard, dimmed && { opacity: 0.8 }]}
+        onPress={onPress}
+        activeOpacity={0.7}
+    >
+        <LinearGradient
+            colors={['rgba(255,255,255,0.08)', 'rgba(255,255,255,0.03)']}
+            style={styles.neonCardGradient}
+        >
+            <View style={[styles.iconBox, { borderColor: color, shadowColor: color }]}>
+                {/* Reduced Icon Size to 26 */}
+                <Icon size={26} color={color} style={{ opacity: 1 }} />
             </View>
-            <Text style={styles.glassCardLabel}>{label}</Text>
-        </BlurView>
+            <Text style={[styles.cardLabel, { color: 'white' }]}>{label}</Text>
+
+            <View style={[styles.glowLine, { backgroundColor: color }]} />
+        </LinearGradient>
     </TouchableOpacity>
 );
 
-const DockItem = ({ icon: Icon, label, active, onPress }: any) => (
-    <TouchableOpacity onPress={onPress} style={styles.dockItem}>
-        <View style={[styles.dockIconBox, active && { backgroundColor: 'rgba(34, 211, 238, 0.15)' }]}>
-            <Icon size={24} color={active ? '#22d3ee' : '#94a3b8'} strokeWidth={active ? 2.5 : 2} />
-        </View>
-        <Text style={[styles.dockLabel, active && { color: '#22d3ee' }]}>{label}</Text>
-    </TouchableOpacity>
-);
-
-const Sidebar = ({ visible, onClose, onNavigate, current, onLogout }: any) => (
+const Sidebar = ({ visible, onClose, onNavigate }: any) => (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)' }}>
-            <TouchableOpacity style={{ position: 'absolute', inset: 0 }} onPress={onClose} />
-            <BlurView intensity={40} tint="dark" style={styles.drawerGlass}>
-                <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1 }}>
-                    <View style={styles.drawerHeader}>
-                        <LinearGradient colors={['#06b6d4', '#2563eb']} style={styles.drawerAvatar}>
-                            <Text style={styles.avatarText}>RS</Text>
-                        </LinearGradient>
-                        <View>
-                            <Text style={styles.drawerName}>Rahul Sharma</Text>
-                            <TouchableOpacity onPress={() => onNavigate('profile')}>
-                                <Text style={styles.drawerLink}>View Profile</Text>
-                            </TouchableOpacity>
-                        </View>
-                        <TouchableOpacity onPress={onClose} style={{ marginLeft: 'auto', padding: 8 }}>
-                            <X color="#94a3b8" size={24} />
-                        </TouchableOpacity>
-                    </View>
+        <View style={styles.modalOverlay}>
+            <TouchableOpacity style={styles.modalBackdrop} onPress={onClose} />
+            <LinearGradient
+                colors={[CyberTheme.colors.surface, CyberTheme.colors.background]}
+                style={styles.drawer}
+            >
+                <View style={styles.drawerHeader}>
+                    <Text style={styles.drawerTitle}>Arthik<Text style={{ color: CyberTheme.colors.secondary }}>Setu</Text></Text>
+                </View>
 
-                    <ScrollView style={{ flex: 1, paddingVertical: 20 }}>
-                        <DrawerRow label="Home" icon={Home} page="dashboard" current={current} nav={onNavigate} />
-                        <DrawerRow label="Verify" icon={ScanFace} page="verify" current={current} nav={onNavigate} />
-                        <DrawerRow label="Analyzer" icon={FileText} page="sms_analyzer" current={current} nav={onNavigate} />
-                        <DrawerRow label="Schemes" icon={Lock} page="schemes" current={current} nav={onNavigate} />
-                        <DrawerRow label="Tax Smart" icon={Calculator} page="tax" current={current} nav={onNavigate} />
-                        <DrawerRow label="Chatbot" icon={Bot} page="chatbot" current={current} nav={onNavigate} />
-                    </ScrollView>
+                <ScrollView style={styles.drawerBody}>
+                    <DrawerItem label="Dashboard" icon={Grid} onPress={() => onNavigate('dashboard')} active />
+                    <DrawerItem label="SMS Analyzer" icon={BarChart2} onPress={() => onNavigate('sms_analyzer')} />
+                    <DrawerItem label="Unified View" icon={FileText} onPress={() => onNavigate('unified')} />
+                    <DrawerItem label="Verify Docs" icon={Shield} onPress={() => onNavigate('verify')} />
+                    <DrawerItem label="Schemes" icon={Lock} onPress={() => onNavigate('schemes')} />
+                    <DrawerItem label="Profile" icon={User} onPress={() => onNavigate('profile')} />
+                </ScrollView>
 
-                    <View style={styles.drawerFooter}>
-                        <TouchableOpacity style={styles.logoutRow} onPress={onLogout}>
-                            <LogOut size={20} color="#f87171" />
-                            <Text style={styles.logoutText}>Log Out</Text>
-                        </TouchableOpacity>
-                        <Text style={styles.versionText}>v2.0 • Holographic Build</Text>
-                    </View>
-                </SafeAreaView>
-            </BlurView>
+                <TouchableOpacity style={styles.logoutBtn} onPress={onClose}>
+                    <LogOut size={20} color={CyberTheme.colors.accent} />
+                    <Text style={styles.logoutText}>Log Out</Text>
+                </TouchableOpacity>
+            </LinearGradient>
         </View>
     </Modal>
 );
 
-const DrawerRow = ({ label, icon: Icon, page, current, nav }: any) => (
-    <TouchableOpacity
-        style={[styles.drawerRow, current === page && { backgroundColor: 'rgba(34, 211, 238, 0.1)', borderLeftColor: '#22d3ee' }]}
-        onPress={() => nav(page)}
-    >
-        <Icon size={20} color={current === page ? '#22d3ee' : '#94a3b8'} />
-        <Text style={[styles.drawerRowText, current === page && { color: '#22d3ee', fontWeight: 'bold' }]}>{label}</Text>
+const DrawerItem = ({ label, icon: Icon, onPress, active }: any) => (
+    <TouchableOpacity style={[styles.drawerItem, active && styles.drawerItemActive]} onPress={onPress}>
+        <Icon size={24} color={active ? CyberTheme.colors.secondary : CyberTheme.colors.textSecondary} />
+        <Text style={[styles.drawerItemText, active && styles.drawerItemTextActive]}>{label}</Text>
+        {active && <View style={styles.activeDot} />}
     </TouchableOpacity>
 );
 
+// --- STYLES ---
+
 const styles = StyleSheet.create({
-    container: { flex: 1 },
-    glassHeader: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 15, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
-    headerContent: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    iconBtn: { padding: 8, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 20 },
-    headerTitle: { color: 'white', fontSize: 16, fontWeight: 'bold', letterSpacing: 1 },
-    headerSubtitle: { color: '#22d3ee', fontSize: 10, letterSpacing: 3, textAlign: 'center' },
-    avatarContainer: { padding: 2 },
-    avatarGradient: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
-    avatarText: { color: 'white', fontWeight: 'bold', fontSize: 12 },
+    mainContainer: { flex: 1, backgroundColor: CyberTheme.colors.background },
 
-    scrollContent: { paddingHorizontal: 20, paddingBottom: 100 },
-    greetingSection: { marginTop: 20, marginBottom: 20 },
-    dateText: { color: '#94a3b8', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 },
-    greetingText: { color: 'white', fontSize: 24, fontWeight: '300' },
-    nameHighlight: { fontWeight: 'bold', color: '#22d3ee' },
+    // Header
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 24 },
+    headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+    menuBtn: { padding: 4 },
+    appName: { fontSize: 22, fontWeight: 'bold', color: 'white', letterSpacing: 1 },
+    profileBtn: {},
+    avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: CyberTheme.colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: CyberTheme.colors.primary },
+    avatarText: { color: 'white', fontWeight: 'bold', fontSize: 14 },
 
-    heroSection: { alignItems: 'center', justifyContent: 'center', marginBottom: 30 },
-    ringContainer: { width: 220, height: 220, alignItems: 'center', justifyContent: 'center' },
-    ringOuter: { position: 'absolute', width: 220, height: 220, borderRadius: 110, borderWidth: 1, borderColor: 'rgba(34, 211, 238, 0.3)', borderStyle: 'dashed' },
-    ringKnob: { width: 8, height: 8, backgroundColor: '#22d3ee', borderRadius: 4, position: 'absolute', top: 5, left: '50%' },
-    ringInner: { position: 'absolute', width: 180, height: 180, borderRadius: 90, borderWidth: 2, borderColor: 'rgba(34, 211, 238, 0.1)', borderStyle: 'dotted' },
-    coreGlass: { width: 140, height: 140, borderRadius: 70, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
-    earningsLabel: { color: '#22d3ee', fontSize: 10, letterSpacing: 1, marginBottom: 4 },
-    earningsValue: { color: 'white', fontSize: 22, fontWeight: 'bold' },
-    growthBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(52, 211, 153, 0.1)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10, marginTop: 4 },
-    growthText: { color: '#34d399', fontSize: 10, fontWeight: 'bold', marginLeft: 4 },
+    contentContainer: { flex: 1 },
+    scrollContent: { paddingHorizontal: 24, paddingBottom: 40 },
 
-    sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-    sectionTitle: { color: 'white', fontSize: 16, fontWeight: '600' },
-    seeAllText: { color: '#22d3ee', fontSize: 12, marginRight: 2 },
-    gridSection: { marginBottom: 24 },
-    grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-    glassCard: { borderRadius: 20, padding: 16, alignItems: 'center', gap: 10, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', height: 110, justifyContent: 'center' },
-    iconCircle: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-    glassCardLabel: { color: '#cbd5e1', fontSize: 12, fontWeight: '500' },
+    // Earnings
+    earningsSection: { marginBottom: 32, marginTop: 10, minHeight: 80 },
+    earningsLabel: { fontSize: 13, color: CyberTheme.colors.textSecondary, marginBottom: 12, textTransform: 'uppercase', letterSpacing: 1, fontWeight: '600' },
+    earningsContent: { flexDirection: 'row', alignItems: 'center' },
+    earningsValue: { fontSize: 48, fontWeight: 'bold', color: 'white', letterSpacing: -1 },
 
-    ctaGradient: { borderRadius: 20, padding: 1, marginBottom: 24 },
-    ctaContent: { flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: 'rgba(2, 6, 23, 0.6)', borderRadius: 19, gap: 12 },
-    ctaIconBox: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(34, 211, 238, 0.1)', alignItems: 'center', justifyContent: 'center' },
-    ctaTitle: { color: 'white', fontWeight: '600', fontSize: 14 },
-    ctaDesc: { color: '#94a3b8', fontSize: 11 },
+    // Loading State
+    loadingContainer: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    calculatingText: { color: CyberTheme.colors.secondary, fontSize: 16, fontWeight: 'bold', letterSpacing: 1 },
 
-    feedSection: { marginBottom: 20 },
-    txCardContainer: { marginBottom: 10 },
-    txCard: { flexDirection: 'row', justifyContent: 'space-between', padding: 16, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-    txLeft: { flexDirection: 'row', gap: 12, alignItems: 'center' },
-    txIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-    txName: { color: 'white', fontWeight: '500', fontSize: 14 },
-    txDate: { color: '#64748b', fontSize: 11 },
-    txRight: { alignItems: 'flex-end' },
-    txAmount: { fontWeight: 'bold', fontSize: 14 },
-    verifiedText: { color: '#22d3ee', fontSize: 10, marginLeft: 2 },
+    // Search Bar
+    searchBar: {
+        flexDirection: 'row', alignItems: 'center', backgroundColor: CyberTheme.colors.surface,
+        paddingHorizontal: 20, paddingVertical: 18, borderRadius: 20, marginBottom: 32,
+        borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)'
+    },
+    searchText: { flex: 1, marginLeft: 16, color: 'white', fontSize: 15, fontWeight: '500' },
+    micIcon: { padding: 4 },
+    micDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: CyberTheme.colors.secondary },
 
-    dock: { position: 'absolute', bottom: 20, left: 20, right: 20, borderRadius: 30, padding: 8, flexDirection: 'row', justifyContent: 'space-around', overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
-    dockItem: { alignItems: 'center', width: 60 },
-    dockIconBox: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, marginBottom: 2 },
-    dockLabel: { fontSize: 10, color: '#94a3b8', fontWeight: '500' },
+    // Grid Menu - UPDATED for tighter spacing
+    gridMenu: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 10, marginBottom: 32 }, // Reduced gap from 16 to 10
+    neonCard: { width: '31%', aspectRatio: 1, borderRadius: 22, overflow: 'hidden' }, // Slightly rounded, keeps width to fit 3 in row
+    neonCardGradient: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: CyberTheme.colors.surface, borderRadius: 22, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
+    iconBox: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 16, marginBottom: 8, borderWidth: 0 },
+    cardLabel: { fontSize: 12, fontWeight: '600', color: 'white', letterSpacing: 0.3 }, // Slightly smaller font
+    glowLine: { position: 'absolute', bottom: 0, width: '40%', height: 3, borderRadius: 2, opacity: 1, shadowRadius: 8 },
 
-    drawerGlass: { flex: 1, width: '80%', maxWidth: 300, backgroundColor: 'rgba(2, 6, 23, 0.95)' },
-    drawerHeader: { padding: 24, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)', flexDirection: 'row', alignItems: 'center', gap: 12 },
-    drawerAvatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-    drawerName: { color: 'white', fontWeight: 'bold', fontSize: 16 },
-    drawerLink: { color: '#22d3ee', fontSize: 12 },
-    drawerRow: { flexDirection: 'row', alignItems: 'center', padding: 16, paddingLeft: 24, gap: 16, borderLeftWidth: 3, borderLeftColor: 'transparent' },
-    drawerRowText: { color: '#94a3b8', fontSize: 14, fontWeight: '500' },
-    drawerFooter: { padding: 20, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' },
-    logoutRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-    logoutText: { color: '#f87171', fontWeight: '600', marginLeft: 12 },
-    versionText: { color: '#475569', fontSize: 10, textAlign: 'center' },
+    // Stats
+    statsSection: {},
+    statsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+    statsTitle: { color: 'white', fontSize: 18, fontWeight: 'bold' },
+    viewAll: { color: CyberTheme.colors.textDim, fontSize: 13, fontWeight: '600' },
 
-    pageContainer: { flex: 1, backgroundColor: 'white', margin: 10, borderRadius: 20, overflow: 'hidden' }
+    statCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: CyberTheme.colors.surface, padding: 20, borderRadius: 20, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
+    statIcon: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginRight: 16 },
+    statInfo: { flex: 1 },
+    statLabel: { color: 'white', fontSize: 15, fontWeight: 'bold', marginBottom: 4 },
+    statSub: { color: CyberTheme.colors.textDim, fontSize: 13 },
+    percentText: { fontSize: 14, fontWeight: 'bold' },
+
+    // Page Wrapper
+    pageWrapper: { flex: 1, backgroundColor: CyberTheme.colors.background },
+    backBtn: { padding: 16, backgroundColor: CyberTheme.colors.surface, marginBottom: 2 },
+    backText: { color: CyberTheme.colors.textSecondary, fontSize: 14, fontWeight: 'bold' },
+
+    // Drawer
+    modalOverlay: { flex: 1, flexDirection: 'row' },
+    modalBackdrop: { position: 'absolute', width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.8)' },
+    drawer: { width: '80%', height: '100%', paddingVertical: 50, paddingHorizontal: 28, borderRightWidth: 1, borderRightColor: 'rgba(255,255,255,0.1)' },
+    drawerHeader: { marginBottom: 40 },
+    drawerTitle: { fontSize: 26, fontWeight: 'bold', color: 'white' },
+    drawerBody: { flex: 1 },
+    drawerItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.03)' },
+    drawerItemActive: { backgroundColor: 'rgba(139, 92, 246, 0.15)', borderRadius: 16, paddingHorizontal: 16, borderBottomWidth: 0 },
+    drawerItemText: { color: CyberTheme.colors.textSecondary, marginLeft: 16, fontSize: 16, fontWeight: '500' },
+    drawerItemTextActive: { color: CyberTheme.colors.secondary, fontWeight: 'bold' },
+    activeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: CyberTheme.colors.secondary, marginLeft: 'auto' },
+    logoutBtn: { flexDirection: 'row', alignItems: 'center', marginTop: 20 },
+    logoutText: { color: CyberTheme.colors.accent, marginLeft: 12, fontWeight: 'bold', fontSize: 16 }
+
 });

@@ -1,28 +1,32 @@
-import { PermissionsAndroid, Platform, Alert, Modal, TextInput } from 'react-native';
-import SmsAndroid from 'react-native-get-sms-android';
-import api from '../api';
-import { GlassInput } from '../components/GlassComponents';
-import React, { useState } from 'react'; // Added React import
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { FileText, ArrowRight } from 'lucide-react-native';
-import { ScreenWrapper } from '../components/ScreenWrapper';
-import { GlassCard, GlassButton } from '../components/GlassComponents';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Platform, PermissionsAndroid, Alert, ActivityIndicator } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Banknote, CreditCard, Smartphone, RefreshCw, BarChart2 } from 'lucide-react-native';
+import { CyberTheme } from '../constants/CyberTheme';
 
-const MESSAGES = [
-    { sender: 'BW-HDFCBK', body: 'A/c XX1234 Credited with INR 25000.00 on 12-MAR-24. Info: SALARY.', amount: 25000, type: 'credit' },
-    { sender: 'JM-SWIGGY', body: 'Payment of INR 540.00 received for Order #8842.', amount: 540, type: 'credit' },
-    { sender: 'AX-UPI', body: 'Debited INR 200.00 for UPI Ref 8492.', amount: 200, type: 'debit' },
-];
+// Import Native SMS Module safely
+let SmsAndroid: any = null;
+if (Platform.OS === 'android') {
+    try {
+        SmsAndroid = require('react-native-get-sms-android').default;
+    } catch (e) {
+        console.log("SMS Module missing (likely Expo Go)");
+    }
+}
 
-export default function SMSAnalyzerScreen({ onBack }: { onBack?: () => void }) {
-    const [messages, setMessages] = useState<any[]>(MESSAGES);
+export default function SMSAnalyzerScreen() {
+    const [scanned, setScanned] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [manualModal, setManualModal] = useState(false);
-    const [manualText, setManualText] = useState("");
+    const [transactions, setTransactions] = useState<any[]>([]);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-    const handleSync = async () => {
+    const runScan = async () => {
+        setLoading(true);
+        setErrorMsg(null);
+
         if (Platform.OS !== 'android') {
-            setManualModal(true);
+            setLoading(false);
+            Alert.alert("Not Supported", "SMS Analysis works only on Android devices.");
             return;
         }
 
@@ -30,141 +34,234 @@ export default function SMSAnalyzerScreen({ onBack }: { onBack?: () => void }) {
             const granted = await PermissionsAndroid.request(
                 PermissionsAndroid.PERMISSIONS.READ_SMS,
                 {
-                    title: "SMS Permission",
-                    message: "ArthikSetu needs access to your SMS to track earnings.",
-                    buttonNeutral: "Ask Me Later",
-                    buttonNegative: "Cancel",
+                    title: "SMS Access Required",
+                    message: "ArthikSetu needs access to your SMS to track daily earnings automatically.",
                     buttonPositive: "OK"
                 }
             );
 
             if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-                setLoading(true);
-                const filter = {
-                    box: 'inbox',
-                    maxCount: 50,
-                };
-
-                SmsAndroid.list(
-                    JSON.stringify(filter),
-                    (fail: any) => {
-                        setLoading(false);
-                        console.log('Failed to read SMS: ' + fail);
-                        Alert.alert("Error", "Could not read SMS. Try manual entry.");
-                        setManualModal(true);
-                    },
-                    async (count: any, smsList: string) => {
-                        const arr = JSON.parse(smsList);
-                        const financeKeywords = ['credited', 'debited', 'acct', 'a/c', 'upi', 'neft', 'imps', 'salary', 'received', 'sent'];
-                        const relevant = arr.filter((m: any) => financeKeywords.some(k => m.body.toLowerCase().includes(k))).map((m: any) => m.body);
-
-                        try {
-                            const res = await api.uploadSMS(relevant);
-                            const newMsgs = res.transactions.map((t: any) => ({
-                                sender: 'Parsed',
-                                body: t.raw.substring(0, 50) + '...',
-                                amount: t.amount,
-                                type: t.type
-                            }));
-                            setMessages(newMsgs);
-                            Alert.alert("Sync Complete", `Found ${res.transactions.length} financial transactions.`);
-                        } catch (e) {
-                            Alert.alert("Backend Error", "Could not analyze SMS.");
-                        } finally {
-                            setLoading(false);
-                        }
-                    },
-                );
+                fetchSMS();
             } else {
-                setManualModal(true);
+                setLoading(false);
+                Alert.alert("Permission Denied", "Cannot analyze earnings without SMS permission.");
             }
         } catch (err) {
-            setManualModal(true);
-        }
-    };
-
-    const handleManualSubmit = async () => {
-        if (!manualText) return;
-        setLoading(true);
-        try {
-            const msgs = [manualText];
-            const res = await api.uploadSMS(msgs);
-            const newMsgs = res.transactions.map((t: any) => ({
-                sender: 'Manual',
-                body: t.raw,
-                amount: t.amount,
-                type: t.type
-            }));
-            setMessages(prev => [...newMsgs, ...prev]);
-            setManualModal(false);
-            setManualText("");
-        } catch (e) {
-            Alert.alert("Error", "Analysis failed.");
-        } finally {
+            console.warn(err);
             setLoading(false);
         }
     };
 
+    const fetchSMS = () => {
+        if (!SmsAndroid) {
+            // Fallback for Simulator/Expo Go
+            setErrorMsg("SMS Module not active in this environment. Using simulation.");
+            simulateScan();
+            return;
+        }
+
+        const filter = {
+            box: 'inbox',
+            maxCount: 100, // Read last 100 SMS
+        };
+
+        SmsAndroid.list(
+            JSON.stringify(filter),
+            (fail: any) => {
+                setLoading(false);
+                Alert.alert("Error", "Failed to read SMS: " + fail);
+            },
+            (count: number, smsList: string) => {
+                const arr = JSON.parse(smsList);
+                processSMS(arr);
+            }
+        );
+    };
+
+    const processSMS = (smsArray: any[]) => {
+        const foundTxns: any[] = [];
+
+        // Simple Regex for Money Detection (Real Logic)
+        const moneyRegex = /(?:rs\.?|inr)\s*(\d+(?:,\d+)*(?:\.\d{1,2})?)|(\d+(?:,\d+)*(?:\.\d{1,2})?)\s*(?:rs\.?|inr)/i;
+
+        smsArray.forEach((sms) => {
+            const body = sms.body.toLowerCase();
+            const sender = sms.address.toLowerCase();
+
+            // Filter for Banking/Gig Keywords
+            if (body.match(/credited|debited|spent|paid|received|txn|acct|bank|swiggy|zomato|uber/)) {
+
+                const amountMatch = body.match(moneyRegex);
+                if (amountMatch) {
+                    const amount = amountMatch[1] || amountMatch[2];
+
+                    let type = 'expense';
+                    if (body.includes('credited') || body.includes('received') || body.includes('refund')) {
+                        type = 'income';
+                    }
+
+                    // Attempt to extract Merchant
+                    let merchant = "Unknown";
+                    if (sender.includes('hdfc')) merchant = "HDFC Bank";
+                    else if (sender.includes('sbi')) merchant = "SBI";
+                    else if (sender.includes('paytm')) merchant = "Paytm";
+                    else if (body.includes('swiggy')) merchant = "Swiggy";
+                    else if (body.includes('zomato')) merchant = "Zomato";
+                    else if (body.includes('uber')) merchant = "Uber";
+                    else merchant = sender; // Fallback
+
+                    foundTxns.push({
+                        id: sms._id,
+                        sender: sms.address,
+                        body: sms.body,
+                        type,
+                        merchant,
+                        date: new Date(sms.date).toLocaleDateString(),
+                        amount: amount.replace(/,/g, '') // Clean amount
+                    });
+                }
+            }
+        });
+
+        setTransactions(foundTxns);
+        setScanned(true);
+        setLoading(false);
+        if (foundTxns.length === 0) {
+            Alert.alert("Analysis Complete", "No financial transactions found in the last 100 messages.");
+        }
+    };
+
+    // Keep simulation as a strictly explicit fallback if module is missing
+    const simulateScan = () => {
+        setTimeout(() => {
+            const MOCK_SMS_REALISTIC = [
+                { id: 'm1', sender: 'HDFCBNK', type: 'income', merchant: 'Swiggy', date: 'Today', amount: 12500 },
+                { id: 'm2', sender: 'ZOMATO', type: 'income', merchant: 'Zomato', date: 'Yesterday', amount: 8400 },
+            ];
+            setTransactions(MOCK_SMS_REALISTIC);
+            setScanned(true);
+            setLoading(false);
+        }, 1500);
+    };
+
     return (
-        <ScreenWrapper title="SMS Analyzer" subtitle="AUTOMATED INCOME TRACKING" showBack onBack={onBack}>
-            <View style={{ marginBottom: 20 }}>
-                <Text style={{ color: '#94a3b8', textAlign: 'center', fontSize: 12 }}>
-                    We scan transaction SMS to automate your income proof.
-                </Text>
+        <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+
+            <View style={styles.visualizerContainer}>
+                <Text style={styles.headerTitle}>Scan My SMS Inbox</Text>
+
+                <View style={styles.waveContainer}>
+                    {[...Array(19)].map((_, i) => (
+                        <LinearGradient
+                            key={i}
+                            colors={loading ? CyberTheme.colors.gradientAccent : i % 3 === 0 ? CyberTheme.colors.gradientCyan : CyberTheme.colors.gradientPrimary}
+                            style={[
+                                styles.waveBar,
+                                {
+                                    height: loading ? Math.random() * 80 + 20 : 40 + Math.sin(i / 2) * 20,
+                                    opacity: loading ? 1 : 0.6
+                                }
+                            ]}
+                        />
+                    ))}
+                </View>
+
+                {!scanned || loading ? (
+                    <TouchableOpacity onPress={runScan} disabled={loading} activeOpacity={0.8} style={{ width: '100%', alignItems: 'center' }}>
+                        <LinearGradient
+                            colors={CyberTheme.colors.gradientPrimary}
+                            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                            style={styles.scanBtn}
+                        >
+                            <View style={styles.fingerprintIcon}>
+                                {loading ? <ActivityIndicator size="small" color="white" /> : <Smartphone size={28} color="white" />}
+                            </View>
+                            <Text style={styles.scanBtnText}>{loading ? "Analyzing Inbox..." : "Start Real Scan"}</Text>
+                        </LinearGradient>
+                    </TouchableOpacity>
+                ) : (
+                    <View style={styles.summaryBadge}>
+                        <BarChart2 size={20} color={CyberTheme.colors.success} />
+                        <Text style={styles.summaryText}>Scan Complete • {transactions.length} Found</Text>
+                    </View>
+                )}
+
+                {errorMsg && <Text style={{ color: 'orange', marginTop: 10 }}>{errorMsg}</Text>}
             </View>
 
-            <View style={{ gap: 12 }}>
-                {messages.map((msg, index) => (
-                    <GlassCard key={index} intensity={15} style={{ flexDirection: 'row', gap: 16 }}>
-                        <View style={[styles.iconBox, { backgroundColor: msg.type === 'credit' ? 'rgba(52, 211, 153, 0.1)' : 'rgba(248, 113, 113, 0.1)' }]}>
-                            <FileText size={20} color={msg.type === 'credit' ? '#34d399' : '#f87171'} />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                                <Text style={styles.sender}>{msg.sender}</Text>
-                                <Text style={[styles.amount, { color: msg.type === 'credit' ? '#34d399' : '#f87171' }]}>
-                                    {msg.type === 'credit' ? '+' : '-'}₹{msg.amount}
+            <View style={styles.resultsSection}>
+                <View style={styles.sectionHeaderRow}>
+                    <Text style={styles.sectionHeader}>Verified Sources</Text>
+                </View>
+
+                {!scanned ? (
+                    <View style={styles.placeholderContainer}>
+                        <Text style={styles.placeholderText}>Tap scan to find real transactions in your inbox.</Text>
+                        <Text style={styles.placeholderSub}>We respect your privacy. Processing happens locally.</Text>
+                    </View>
+                ) : (
+                    transactions.map((txn, index) => (
+                        <View key={txn.id} style={styles.txnCard}>
+                            <View style={[styles.txnIconBox, { backgroundColor: txn.type === 'income' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)' }]}>
+                                {txn.type === 'income' ? <Banknote size={24} color={CyberTheme.colors.success} /> : <CreditCard size={24} color="#EF4444" />}
+                            </View>
+
+                            <View style={styles.txnInfo}>
+                                <Text style={styles.txnTitle}>{txn.merchant}</Text>
+                                <Text style={styles.txnSub}>{txn.type === 'income' ? 'Income' : 'Expense'} • {txn.date}</Text>
+                            </View>
+
+                            <View style={[styles.txnAmountBox, { borderColor: txn.type === 'income' ? CyberTheme.colors.success : 'rgba(239, 68, 68, 0.5)' }]}>
+                                <Text style={[styles.txnAmount, { color: txn.type === 'income' ? CyberTheme.colors.success : '#EF4444' }]}>
+                                    {txn.type === 'income' ? '+' : '-'} ₹{txn.amount}
                                 </Text>
                             </View>
-                            <Text style={styles.body}>{msg.body}</Text>
                         </View>
-                    </GlassCard>
-                ))}
+                    ))
+                )}
             </View>
 
-            <View style={{ marginTop: 20 }}>
-                <GlassButton title={loading ? "SYNCING..." : "SYNC SMS NOW"} onPress={handleSync} disabled={loading} />
-            </View>
-
-            <Modal visible={manualModal} transparent animationType="slide">
-                <View style={styles.modalBackdrop}>
-                    <GlassCard intensity={80} style={{ padding: 24 }}>
-                        <Text style={{ color: 'white', fontSize: 18, fontWeight: 'bold', marginBottom: 12 }}>Manual Entry</Text>
-                        <Text style={{ color: '#94a3b8', marginBottom: 16 }}>We couldn't access SMS. Paste a transaction message here.</Text>
-
-                        <GlassInput
-                            value={manualText}
-                            onChangeText={setManualText}
-                            placeholder="e.g. A/c Credited with Rs 5000..."
-                            multiline
-                            numberOfLines={3}
-                        />
-
-                        <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
-                            <View style={{ flex: 1 }}><GlassButton title="CANCEL" onPress={() => setManualModal(false)} variant="secondary" /></View>
-                            <View style={{ flex: 1 }}><GlassButton title="ANALYZE" onPress={handleManualSubmit} /></View>
-                        </View>
-                    </GlassCard>
-                </View>
-            </Modal>
-        </ScreenWrapper>
+        </ScrollView>
     );
 }
 
 const styles = StyleSheet.create({
-    iconBox: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-    sender: { color: 'white', fontWeight: 'bold' },
-    amount: { fontWeight: 'bold' },
-    body: { color: '#94a3b8', fontSize: 12, lineHeight: 16 },
-    modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', padding: 20 }
+    container: { flex: 1, backgroundColor: CyberTheme.colors.background },
+    contentContainer: { padding: 24, paddingBottom: 100 },
+
+    visualizerContainer: { alignItems: 'center', marginVertical: 30 },
+    headerTitle: { color: 'white', fontSize: 24, fontWeight: 'bold', marginBottom: 40, letterSpacing: 1 },
+
+    waveContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 120, marginBottom: 50 },
+    waveBar: { width: 8, borderRadius: 4, opacity: 0.9 },
+
+    scanBtn: {
+        width: '85%', height: 60, borderRadius: 30, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 14,
+        shadowColor: CyberTheme.colors.primary, shadowOpacity: 0.6, shadowRadius: 20, elevation: 12
+    },
+    fingerprintIcon: {},
+    scanBtnText: { color: 'white', fontSize: 18, fontWeight: 'bold', letterSpacing: 1 },
+
+    summaryBadge: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: 'rgba(16, 185, 129, 0.1)', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 20, borderWidth: 1, borderColor: CyberTheme.colors.success },
+    summaryText: { color: CyberTheme.colors.success, fontWeight: 'bold', fontSize: 14 },
+
+    resultsSection: { marginTop: 20 },
+    sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+    sectionHeader: { color: 'white', fontSize: 18, fontWeight: 'bold' },
+
+    placeholderContainer: { alignItems: 'center', marginTop: 20, opacity: 0.7 },
+    placeholderText: { color: 'white', fontWeight: '600', fontSize: 15 },
+    placeholderSub: { color: CyberTheme.colors.textDim, fontSize: 13, marginTop: 6 },
+
+    txnCard: {
+        backgroundColor: CyberTheme.colors.surface, borderRadius: 20, padding: 18, marginBottom: 14,
+        flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)'
+    },
+    txnIconBox: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 18 },
+    txnInfo: { flex: 1 },
+    txnTitle: { color: 'white', fontSize: 16, fontWeight: 'bold' },
+    txnSub: { color: CyberTheme.colors.textDim, fontSize: 12, marginTop: 4 },
+    txnAmountBox: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, borderWidth: 1, backgroundColor: 'rgba(0,0,0,0.2)' },
+    txnAmount: { fontSize: 13, fontWeight: 'bold' },
+
 });
