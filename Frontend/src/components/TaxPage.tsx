@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { API_BASE_URL } from '../config';
 
 import { Card } from './ui/card';
 import { Button } from './ui/button';
@@ -38,7 +39,7 @@ export function TaxPage() {
 
   useEffect(() => {
     // Fetch calculated tax data from backend
-    fetch('http://localhost:8000/api/tax_calculation')
+    fetch(`${API_BASE_URL}/api/tax_calculation`)
       .then(res => res.json())
       .then(data => {
         setTotalAnnualEarnings(data.annual_income);
@@ -48,7 +49,7 @@ export function TaxPage() {
       .catch(err => console.error("Failed to fetch tax calculations", err));
 
     // Fetch income sources for PDF
-    fetch('http://localhost:8000/api/dashboard')
+    fetch(`${API_BASE_URL}/api/dashboard`)
       .then(res => res.json())
       .then(data => {
         setIncomeSources(data.incomeSources || []);

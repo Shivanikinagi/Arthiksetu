@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { User, Phone, Mail, MapPin, Calendar, Shield, CheckCircle, Loader2, Upload, LogOut, Edit2, Save, X, Lock, ShieldCheck } from 'lucide-react';
+import { API_BASE_URL } from '../config';
 
 export function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
@@ -54,7 +55,7 @@ export function ProfilePage() {
     setVerificationStatus(prev => ({ ...prev, [docName]: 'sending_otp' }));
 
     try {
-      const response = await fetch('http://localhost:8000/api/send_otp', {
+      const response = await fetch(`${API_BASE_URL}/api/send_otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ target, type }),
@@ -83,7 +84,7 @@ export function ProfilePage() {
     setVerificationStatus(prev => ({ ...prev, [docName]: 'verifying' }));
 
     try {
-      const response = await fetch('http://localhost:8000/api/verify_otp', {
+      const response = await fetch(`${API_BASE_URL}/api/verify_otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ target, type, otp }),
@@ -121,7 +122,7 @@ export function ProfilePage() {
       formData.append('doc_type', uploadingDoc);
 
       try {
-        const response = await fetch('http://localhost:8000/api/verify_document', {
+        const response = await fetch(`${API_BASE_URL}/api/verify_document`, {
           method: 'POST',
           body: formData,
         });

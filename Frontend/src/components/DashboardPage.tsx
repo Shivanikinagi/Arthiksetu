@@ -3,6 +3,7 @@ import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { CheckCircle2, AlertCircle, TrendingUp, Upload, Loader2, MessageSquare, Bot, FileSearch, ShieldCheck, Gift, ArrowRight } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { API_BASE_URL } from '../config';
 
 export function DashboardPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -14,7 +15,7 @@ export function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('http://localhost:8000/api/dashboard')
+    fetch(`${API_BASE_URL}/api/dashboard`)
       .then(res => {
         if (!res.ok) throw new Error('Backend not responding');
         return res.json();
@@ -45,7 +46,7 @@ export function DashboardPage() {
       formData.append('doc_type', 'Income Proof');
 
       try {
-        const response = await fetch('http://localhost:8000/api/verify_document', {
+        const response = await fetch(`${API_BASE_URL}/api/verify_document`, {
           method: 'POST',
           body: formData,
         });

@@ -4,6 +4,8 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Bot, Send, User, Loader2 } from 'lucide-react';
 
+import { API_BASE_URL } from '../config';
+
 interface Message {
     role: 'user' | 'assistant';
     content: string;
@@ -38,7 +40,7 @@ export function AIChatbot() {
         setLoading(true);
 
         try {
-            const response = await fetch('http://localhost:8000/api/chat', {
+            const response = await fetch(`${API_BASE_URL}/api/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -101,20 +103,18 @@ export function AIChatbot() {
                             key={index}
                             className={`flex gap-3 ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
                         >
-                            <div className={`p-2 rounded-full h-8 w-8 flex items-center justify-center ${
-                                message.role === 'user' ? 'bg-[#F7931E]' : 'bg-[#0A1F44]'
-                            }`}>
+                            <div className={`p-2 rounded-full h-8 w-8 flex items-center justify-center ${message.role === 'user' ? 'bg-[#F7931E]' : 'bg-[#0A1F44]'
+                                }`}>
                                 {message.role === 'user' ? (
                                     <User className="w-4 h-4 text-white" />
                                 ) : (
                                     <Bot className="w-4 h-4 text-white" />
                                 )}
                             </div>
-                            <div className={`flex-1 max-w-[80%] p-3 rounded-lg ${
-                                message.role === 'user'
+                            <div className={`flex-1 max-w-[80%] p-3 rounded-lg ${message.role === 'user'
                                     ? 'bg-[#F7931E] text-white ml-auto'
                                     : 'bg-gray-100 text-gray-800'
-                            }`}>
+                                }`}>
                                 <p className="whitespace-pre-wrap">{message.content}</p>
                             </div>
                         </div>

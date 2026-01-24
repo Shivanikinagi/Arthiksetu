@@ -3,6 +3,7 @@ import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { MessageSquare, Loader2, CheckCircle, DollarSign, Calendar, Building2, Sparkles, AlertTriangle, ArrowRight, Zap, RefreshCw } from 'lucide-react';
+import { API_BASE_URL } from '../config';
 
 interface ParsedSMS {
     raw: string;
@@ -18,6 +19,10 @@ export function SMSAnalyzer() {
     const [messages, setMessages] = useState('');
     const [parsedResults, setParsedResults] = useState<ParsedSMS[]>([]);
     const [loading, setLoading] = useState(false);
+    const [showFraud, setShowFraud] = useState(false);
+
+    // Fraud Detection Logic
+    const fraudAlerts = parsedResults.filter((r: ParsedSMS) => r.type === 'debit' && r.amount > 5000);
 
     const handleAnalyze = async () => {
         if (!messages.trim()) return;
@@ -25,7 +30,7 @@ export function SMSAnalyzer() {
         setLoading(true);
         try {
             const messageList = messages.split('\n').filter(m => m.trim());
-            const response = await fetch('http://localhost:8000/api/parse_sms', {
+            const response = await fetch(`${API_BASE_URL}/api/parse_sms`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ messages: messageList })
@@ -141,13 +146,7 @@ export function SMSAnalyzer() {
                         </Card>
                     </div>
 
- // ... (previous imports)
-                    const [showFraud, setShowFraud] = useState(false);
 
-    // Fraud Detection Logic
-    const fraudAlerts = parsedResults.filter(r => r.type === 'debit' && r.amount > 5000);
-
-                    // ... (rest of component until Result Section) ...
 
                     {/* Results Section */}
                     <div className="space-y-6">

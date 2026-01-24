@@ -3,6 +3,8 @@ import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Bot, Send, Loader2, Sparkles, TrendingUp, CheckCircle } from 'lucide-react';
 
+import { API_BASE_URL } from '../config';
+
 export function AIAssistant() {
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
@@ -19,7 +21,7 @@ export function AIAssistant() {
                 .map((msg: string) => msg.replace(/\n/g, ' ').trim())
                 .filter((msg: string) => msg.length > 0);
 
-            const response = await fetch('http://localhost:8000/api/parse_sms', {
+            const response = await fetch(`${API_BASE_URL}/api/parse_sms`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ messages })

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { ChevronRight, Percent, Clock, ShieldCheck, Banknote, Sparkles, Building2 } from 'lucide-react';
+import { API_BASE_URL } from '../config';
 
 export function Loans() {
     const [loans, setLoans] = useState<any[]>([]);
@@ -9,7 +10,7 @@ export function Loans() {
     const [userIncome, setUserIncome] = useState(0);
 
     useEffect(() => {
-        fetch('http://localhost:8000/api/loans')
+        fetch(`${API_BASE_URL}/api/loans`)
             .then(res => res.json())
             .then(data => {
                 setLoans(data.loans || []);

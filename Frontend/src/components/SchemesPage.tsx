@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { CheckCircle, Clock, Gift, ArrowRight, TrendingUp, Shield, Heart, Sparkles, ExternalLink, RefreshCw } from 'lucide-react';
+import { API_BASE_URL } from '../config';
 
 // Icon mapping since we can't send components from backend
 const ICON_MAP: any = {
@@ -18,7 +19,7 @@ export function SchemesPage() {
   const fetchSchemes = () => {
     setLoading(true);
     // 1. Fetch real income first
-    fetch('http://localhost:8000/api/dashboard')
+    fetch(`${API_BASE_URL}/api/dashboard`)
       .then(res => res.json())
       .then(dashboardData => {
         const sources = dashboardData.incomeSources || [];
@@ -33,7 +34,7 @@ export function SchemesPage() {
         };
 
         // 2. Fetch schemes based on real income
-        return fetch('http://localhost:8000/api/recommend_schemes', {
+        return fetch(`${API_BASE_URL}/api/recommend_schemes`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(userProfile)

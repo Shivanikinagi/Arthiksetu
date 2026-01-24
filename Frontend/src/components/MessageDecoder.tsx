@@ -3,6 +3,7 @@ import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { MessageSquare, Loader2, Info } from 'lucide-react';
 import { Textarea } from './ui/textarea';
+import { API_BASE_URL } from '../config';
 
 export function MessageDecoder() {
     const [message, setMessage] = useState('');
@@ -14,7 +15,7 @@ export function MessageDecoder() {
 
         setLoading(true);
         try {
-            const response = await fetch('http://localhost:8000/api/decode_message', {
+            const response = await fetch(`${API_BASE_URL}/api/decode_message`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message })

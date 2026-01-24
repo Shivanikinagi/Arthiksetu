@@ -1,6 +1,7 @@
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Download, FileText, TrendingUp, Calendar, FileCheck, Shield, Clock } from 'lucide-react';
+import { API_BASE_URL } from '../config';
 
 export function ReportsPage() {
   const reports = [
@@ -94,8 +95,8 @@ export function ReportsPage() {
               >
                 <div className="flex items-start gap-5">
                   <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm shrink-0 transition-colors ${report.category === 'Tax' ? 'bg-orange-100 text-orange-600' :
-                      report.category === 'Verification' ? 'bg-green-100 text-green-600' :
-                        'bg-blue-100 text-blue-600'
+                    report.category === 'Verification' ? 'bg-green-100 text-green-600' :
+                      'bg-blue-100 text-blue-600'
                     }`}>
                     {report.verified ? <Shield className="w-6 h-6" /> : <FileText className="w-6 h-6" />}
                   </div>
@@ -127,9 +128,9 @@ export function ReportsPage() {
                     onClick={(e) => {
                       e.stopPropagation();
                       if (report.id === 'annual_2024') {
-                        window.open('http://localhost:8000/api/generate_report', '_blank');
+                        window.open(`${API_BASE_URL}/api/generate_report`, '_blank');
                       } else {
-                        window.open(`http://localhost:8000/api/download_report/${report.id}`, '_blank');
+                        window.open(`${API_BASE_URL}/api/download_report/${report.id}`, '_blank');
                       }
                     }}
                   >

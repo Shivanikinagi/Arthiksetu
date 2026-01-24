@@ -3,6 +3,7 @@ import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { TrendingUp, AlertTriangle, RefreshCw, BarChart2, PieChart as PieChartIcon, LayoutDashboard, Sparkles, ArrowRight, Activity } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Area, AreaChart } from 'recharts';
+import { API_BASE_URL } from '../config';
 
 const COLORS = ['#F7931E', '#0A1F44', '#1E7F5C', '#3B82F6', '#F59E0B', '#8B5CF6'];
 
@@ -23,7 +24,7 @@ export function UnifiedDashboard() {
     const fetchAnalysis = async () => {
         setLoading(true);
         try {
-            const response = await fetch('http://localhost:8000/api/unified_dashboard', {
+            const response = await fetch(`${API_BASE_URL}/api/unified_dashboard`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -43,7 +44,7 @@ export function UnifiedDashboard() {
                 { date: '2025-05', amount: totalEarnings },
             ];
 
-            const riskResponse = await fetch('http://localhost:8000/api/predict_risk', {
+            const riskResponse = await fetch(`${API_BASE_URL}/api/predict_risk`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ data: earningsHistory })

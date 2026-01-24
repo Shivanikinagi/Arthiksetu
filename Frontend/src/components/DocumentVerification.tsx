@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Upload, CheckCircle, XCircle, Loader2, FileText, Image as ImageIcon } from 'lucide-react';
+import { API_BASE_URL } from '../config';
 
 export function DocumentVerification() {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -15,7 +16,7 @@ export function DocumentVerification() {
         if (file) {
             setSelectedFile(file);
             setResult(null);
-            
+
             // Create preview
             const reader = new FileReader();
             reader.onloadend = () => {
@@ -34,7 +35,7 @@ export function DocumentVerification() {
         formData.append('doc_type', docType);
 
         try {
-            const response = await fetch('http://localhost:8000/api/verify_document', {
+            const response = await fetch(`${API_BASE_URL}/api/verify_document`, {
                 method: 'POST',
                 body: formData
             });
@@ -154,13 +155,12 @@ export function DocumentVerification() {
                     ) : (
                         <div className="space-y-4">
                             {/* Status Badge */}
-                            <div className={`p-4 rounded-lg flex items-center gap-3 ${
-                                result.status === 'verified'
+                            <div className={`p-4 rounded-lg flex items-center gap-3 ${result.status === 'verified'
                                     ? 'bg-green-50 border-2 border-green-200'
                                     : result.status === 'rejected'
-                                    ? 'bg-red-50 border-2 border-red-200'
-                                    : 'bg-yellow-50 border-2 border-yellow-200'
-                            }`}>
+                                        ? 'bg-red-50 border-2 border-red-200'
+                                        : 'bg-yellow-50 border-2 border-yellow-200'
+                                }`}>
                                 {result.status === 'verified' ? (
                                     <CheckCircle className="w-8 h-8 text-green-600" />
                                 ) : (
