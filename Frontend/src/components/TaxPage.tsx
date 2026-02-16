@@ -36,17 +36,26 @@ export function TaxPage() {
   const [taxPayable, setTaxPayable] = useState(0);
   const [refundEligible, setRefundEligible] = useState(0);
   const [incomeSources, setIncomeSources] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Fetch calculated tax data from backend
+    setIsLoading(true);
     fetch(`${API_BASE_URL}/api/tax_calculation`)
       .then(res => res.json())
       .then(data => {
-        setTotalAnnualEarnings(data.annual_income);
-        setTaxPayable(data.tax_payable);
-        setRefundEligible(data.refund_eligible);
+        setTotalAnnualEarnings(data.annual_income || 0);
+        setTaxPayable(data.tax_payable || 0);
+        setRefundEligible(data.refund_eligible || 0);
       })
-      .catch(err => console.error("Failed to fetch tax calculations", err));
+      .catch(err => {
+        console.error("Failed to fetch tax calculations", err);
+        // Set default values on error
+        setTotalAnnualEarnings(0);
+        setTaxPayable(0);
+        setRefundEligible(0);
+      })
+      .finally(() => setIsLoading(false));
 
     // Fetch income sources for PDF
     fetch(`${API_BASE_URL}/api/dashboard`)
@@ -127,6 +136,18 @@ export function TaxPage() {
 
     doc.save("Income_Passport_Verified_2024.pdf");
   };
+
+  // Show loading state while data is being fetched
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading tax information...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30">

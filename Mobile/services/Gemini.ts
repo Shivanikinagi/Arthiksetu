@@ -1,7 +1,7 @@
 import { Alert } from 'react-native';
 
-const API_KEY = "AIzaSyBOmRJQ8Q21Ln5FvpHx8sglC6CsyeTqcPA"; // User's Key from ChatbotScreen
-const MODEL_NAME = "gemini-1.5-flash";
+const API_KEY = "AIzaSyBW7pa0akQ24wxPwBy17TkaeJ3nh49gcG0"; // Updated Gemini API Key
+const MODEL_NAME = "gemini-pro";
 
 export const GeminiService = {
 

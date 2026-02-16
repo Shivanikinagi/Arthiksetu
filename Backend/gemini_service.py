@@ -11,14 +11,14 @@ from datetime import datetime, timedelta
 from typing import List, Dict
 
 # Configure the API key
-API_KEY = "AIzaSyBOmRJQ8Q21Ln5FvpHx8sglC6CsyeTqcPA"
+API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyBW7pa0akQ24wxPwBy17TkaeJ3nh49gcG0")
 
 def configure_gemini():
     """Configure Gemini API"""
     if genai is None:
         raise ImportError("Google Generative AI module not found. Install google-generativeai")
     genai.configure(api_key=API_KEY)
-    return genai.GenerativeModel('gemini-1.5-flash')
+    return genai.GenerativeModel('gemini-pro')
 
 def analyze_earning_trend(earnings_data):
     """

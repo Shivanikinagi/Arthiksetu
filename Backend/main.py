@@ -297,6 +297,76 @@ async def simplify_scheme_endpoint(profile: UserProfile):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/tax_calculation")
+def calculate_tax():
+    """
+    Calculate tax based on current earnings.
+    Returns estimated annual income, tax payable, and refund eligibility.
+    """
+    try:
+        # Fetch sample monthly earnings (in production, fetch from database)
+        monthly_income = 40000  # Average monthly income
+        annual_income = monthly_income * 12  # ₹480,000
+        
+        # Indian Income Tax Slabs (New Tax Regime 2024-25)
+        # 0 - 3,00,000: 0%
+        # 3,00,001 - 6,00,000: 5%
+        # 6,00,001 - 9,00,000: 10%
+        # 9,00,001 - 12,00,000: 15%
+        # 12,00,001 - 15,00,000: 20%
+        # Above 15,00,000: 30%
+        
+        tax_payable = 0
+        
+        if annual_income <= 300000:
+            tax_payable = 0
+        elif annual_income <= 600000:
+            tax_payable = (annual_income - 300000) * 0.05
+        elif annual_income <= 900000:
+            tax_payable = 15000 + (annual_income - 600000) * 0.10
+        elif annual_income <= 1200000:
+            tax_payable = 45000 + (annual_income - 900000) * 0.15
+        elif annual_income <= 1500000:
+            tax_payable = 90000 + (annual_income - 1200000) * 0.20
+        else:
+            tax_payable = 150000 + (annual_income - 1500000) * 0.30
+        
+        # Standard deduction (₹50,000)
+        standard_deduction = 50000
+        taxable_income = annual_income - standard_deduction
+        
+        # Recalculate with deduction
+        if taxable_income <= 300000:
+            tax_payable = 0
+        elif taxable_income <= 600000:
+            tax_payable = (taxable_income - 300000) * 0.05
+        elif taxable_income <= 900000:
+            tax_payable = 15000 + (taxable_income - 600000) * 0.10
+        elif taxable_income <= 1200000:
+            tax_payable = 45000 + (taxable_income - 900000) * 0.15
+        elif taxable_income <= 1500000:
+            tax_payable = 90000 + (taxable_income - 1200000) * 0.20
+        else:
+            tax_payable = 150000 + (taxable_income - 1500000) * 0.30
+        
+        # Section 87A rebate (if total income <= ₹7,00,000)
+        if annual_income <= 700000:
+            tax_payable = max(0, tax_payable - 25000)
+        
+        # Refund eligibility (assuming TDS deducted)
+        tds_deducted = tax_payable * 1.2  # Simulating over-deduction
+        refund_eligible = max(0, tds_deducted - tax_payable)
+        
+        return {
+            "annual_income": annual_income,
+            "tax_payable": round(tax_payable, 2),
+            "refund_eligible": round(refund_eligible, 2),
+            "standard_deduction": standard_deduction,
+            "taxable_income": taxable_income
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
