@@ -5,16 +5,17 @@ import { CheckCircle2, AlertCircle, TrendingUp, Upload, Loader2, MessageSquare, 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { API_BASE_URL } from '../config';
 
-export function DashboardPage() {
+export function DashboardPage({ onNavigate }: { onNavigate?: (page: string) => void }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [incomeSources, setIncomeSources] = useState<any[]>([]);
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+  const [uploadResult, setUploadResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const fetchDashboard = () => {
+    setLoading(true);
     fetch(`${API_BASE_URL}/api/dashboard`)
       .then(res => {
         if (!res.ok) throw new Error('Backend not responding');
@@ -31,6 +32,10 @@ export function DashboardPage() {
         setError('Unable to connect to backend. Please ensure the backend server is running on port 8000.');
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    fetchDashboard();
   }, []);
 
   const totalEarnings = incomeSources.reduce((sum, source) => sum + source.amount, 0);
@@ -39,7 +44,7 @@ export function DashboardPage() {
     const file = event.target.files?.[0];
     if (file) {
       setUploading(true);
-      setUploadMessage(null);
+      setUploadResult(null);
 
       const formData = new FormData();
       formData.append('file', file);
@@ -54,14 +59,29 @@ export function DashboardPage() {
         const data = await response.json();
 
         if (response.ok) {
-          setUploadMessage(`Uploaded: ${file.name}`);
-          // Optionally refresh data here if verification adds a new source immediately
+          setUploadResult({
+            ...data,
+            fileName: file.name,
+            success: data.status === 'verified'
+          });
+          // Refresh dashboard data to show new income
+          if (data.status === 'verified') {
+            setTimeout(() => fetchDashboard(), 500);
+          }
         } else {
-          setUploadMessage(`Upload failed: ${data.message || 'Unknown error'}`);
+          setUploadResult({
+            success: false,
+            message: data.message || data.detail || 'Unknown error',
+            fileName: file.name
+          });
         }
       } catch (error) {
         console.error('Error uploading file:', error);
-        setUploadMessage('Error uploading file. Please try again.');
+        setUploadResult({
+          success: false,
+          message: 'Error uploading file. Please try again.',
+          fileName: file.name
+        });
       } finally {
         setUploading(false);
         if (fileInputRef.current) fileInputRef.current.value = "";
@@ -137,8 +157,26 @@ export function DashboardPage() {
                 style={{ display: 'none' }}
               />
             </div>
-            {uploadMessage && (
-              <p className="mt-4 text-sm text-gray-600">{uploadMessage}</p>
+            {uploadResult && (
+              <div className={`mt-0 ml-4 p-4 rounded-lg max-w-md ${uploadResult.success ? 'bg-green-900/40 border border-green-500/40' : 'bg-red-900/40 border border-red-500/40'}`}>
+                <p className={`text-sm font-semibold ${uploadResult.success ? 'text-green-300' : 'text-red-300'}`}>
+                  {uploadResult.success ? '✓ Income Proof Verified' : '✗ Verification Failed'}
+                </p>
+                {uploadResult.total_amount > 0 && (
+                  <p className="text-white text-lg font-bold mt-1">
+                    ₹{Number(uploadResult.total_amount).toLocaleString('en-IN')} detected
+                  </p>
+                )}
+                {uploadResult.source_name && uploadResult.source_name !== 'Unknown' && (
+                  <p className="text-gray-300 text-xs mt-1">Source: {uploadResult.source_name}</p>
+                )}
+                {uploadResult.fileName && (
+                  <p className="text-gray-400 text-xs mt-1">File: {uploadResult.fileName}</p>
+                )}
+                {!uploadResult.success && uploadResult.message && (
+                  <p className="text-red-300 text-xs mt-1">{uploadResult.message}</p>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -219,7 +257,7 @@ export function DashboardPage() {
         <div>
           <h2 className="text-xl font-bold text-gray-900 mb-6">Features</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="p-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg transition-all transform hover:-translate-y-1 cursor-pointer">
+            <Card onClick={() => onNavigate?.('unified-dashboard')} className="p-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg transition-all transform hover:-translate-y-1 cursor-pointer">
               <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mb-4">
                 <TrendingUp className="w-6 h-6 text-orange-600" />
               </div>
@@ -229,7 +267,7 @@ export function DashboardPage() {
               </p>
             </Card>
 
-            <Card className="p-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg transition-all transform hover:-translate-y-1 cursor-pointer">
+            <Card onClick={() => onNavigate?.('sms-analyzer')} className="p-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg transition-all transform hover:-translate-y-1 cursor-pointer">
               <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
                 <MessageSquare className="w-6 h-6 text-blue-600" />
               </div>
@@ -239,7 +277,7 @@ export function DashboardPage() {
               </p>
             </Card>
 
-            <Card className="p-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg transition-all transform hover:-translate-y-1 cursor-pointer">
+            <Card onClick={() => onNavigate?.('ai-assistant')} className="p-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg transition-all transform hover:-translate-y-1 cursor-pointer">
               <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-4">
                 <Bot className="w-6 h-6 text-purple-600" />
               </div>
@@ -249,7 +287,7 @@ export function DashboardPage() {
               </p>
             </Card>
 
-            <Card className="p-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg transition-all transform hover:-translate-y-1 cursor-pointer">
+            <Card onClick={() => onNavigate?.('message-decoder')} className="p-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg transition-all transform hover:-translate-y-1 cursor-pointer">
               <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-4">
                 <FileSearch className="w-6 h-6 text-green-600" />
               </div>
@@ -259,7 +297,7 @@ export function DashboardPage() {
               </p>
             </Card>
 
-            <Card className="p-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg transition-all transform hover:-translate-y-1 cursor-pointer">
+            <Card onClick={() => onNavigate?.('document-verify')} className="p-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg transition-all transform hover:-translate-y-1 cursor-pointer">
               <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mb-4">
                 <ShieldCheck className="w-6 h-6 text-red-600" />
               </div>
@@ -269,7 +307,7 @@ export function DashboardPage() {
               </p>
             </Card>
 
-            <Card className="p-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg transition-all transform hover:-translate-y-1 cursor-pointer">
+            <Card onClick={() => onNavigate?.('schemes')} className="p-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg transition-all transform hover:-translate-y-1 cursor-pointer">
               <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center mb-4">
                 <Gift className="w-6 h-6 text-indigo-600" />
               </div>

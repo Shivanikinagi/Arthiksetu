@@ -10,15 +10,62 @@ import re
 from datetime import datetime, timedelta
 from typing import List, Dict
 
-# Configure the API key
-API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyBW7pa0akQ24wxPwBy17TkaeJ3nh49gcG0")
+# Configure API keys with rotation support
+API_KEYS = [
+    os.getenv("GEMINI_API_KEY", "AIzaSyA83Qso7jWQL6b3dCgeBieq8FB2pgwFM2g"),
+    "AIzaSyAAZKZN8wVdSX9P6pJzA5NV65BYX1ADYWw",
+    "AIzaSyDKwSJ8r3rCuslVV20OzuClp2I7rmGYu_Y",
+    "AIzaSyCMAT0fzY9jrWhckh13hDr9JnQB5sU1npI",
+]
+_current_key_index = 0
 
-def configure_gemini():
-    """Configure Gemini API"""
+def configure_gemini(model_name='gemini-2.5-flash'):
+    """Configure Gemini API with automatic key rotation on quota errors."""
+    global _current_key_index
     if genai is None:
         raise ImportError("Google Generative AI module not found. Install google-generativeai")
-    genai.configure(api_key=API_KEY)
-    return genai.GenerativeModel('gemini-pro')
+    genai.configure(api_key=API_KEYS[_current_key_index % len(API_KEYS)])
+    return genai.GenerativeModel(model_name)
+
+def _rotate_key_and_retry(func, *args, max_retries=2, **kwargs):
+    """Retry a Gemini call with the next API key on 429 errors."""
+    global _current_key_index
+    last_err = None
+    for attempt in range(max_retries + 1):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            last_err = e
+            err_str = str(e)
+            if "429" in err_str or "quota" in err_str.lower() or "Resource has been exhausted" in err_str:
+                _current_key_index = (_current_key_index + 1) % len(API_KEYS)
+                genai.configure(api_key=API_KEYS[_current_key_index])
+                time.sleep(1)
+            else:
+                raise
+    raise last_err
+
+def _generate_with_retry(model, content, max_retries=2):
+    """Call model.generate_content with automatic key rotation on quota errors."""
+    global _current_key_index
+    last_err = None
+    for attempt in range(max_retries + 1):
+        try:
+            if isinstance(content, list):
+                return model.generate_content(content)
+            else:
+                return model.generate_content(content)
+        except Exception as e:
+            last_err = e
+            err_str = str(e)
+            if "429" in err_str or "quota" in err_str.lower() or "Resource has been exhausted" in err_str:
+                _current_key_index = (_current_key_index + 1) % len(API_KEYS)
+                genai.configure(api_key=API_KEYS[_current_key_index])
+                model = configure_gemini()
+                time.sleep(1)
+            else:
+                raise
+    raise last_err
 
 def analyze_earning_trend(earnings_data):
     """
@@ -37,7 +84,7 @@ def analyze_earning_trend(earnings_data):
         3. Keep it encouraging and under 50 words.
         """
 
-        response = model.generate_content(prompt)
+        response = _generate_with_retry(model, prompt)
         return response.text
     except Exception as e:
         return f"AI Analysis currently unavailable: {str(e)}"
@@ -67,7 +114,7 @@ async def parse_sms_with_ai(messages: List[str]) -> List[Dict]:
             Only return the JSON, no markdown formatting.
             """
             
-            response = model.generate_content(prompt)
+            response = _generate_with_retry(model, prompt)
             text = response.text.replace('```json', '').replace('```', '').strip()
             
             try:
@@ -117,7 +164,7 @@ async def chat_with_ai_assistant(message: str, history: List[Dict]) -> str:
         Keep responses under 100 words and friendly.
         """
         
-        response = model.generate_content(prompt)
+        response = _generate_with_retry(model, prompt)
         return response.text
     except Exception as e:
         return f"I'm having trouble connecting right now. Error: {str(e)}"
@@ -149,7 +196,7 @@ async def predict_income_risk(earnings_history: List[Dict]) -> Dict:
         Only return JSON, no markdown.
         """
         
-        response = model.generate_content(prompt)
+        response = _generate_with_retry(model, prompt)
         text = response.text.replace('```json', '').replace('```', '').strip()
         
         try:
@@ -179,7 +226,7 @@ async def decode_financial_message(message: str) -> str:
         Keep it under 50 words.
         """
         
-        response = model.generate_content(prompt)
+        response = _generate_with_retry(model, prompt)
         return response.text
     except Exception as e:
         return f"Could not decode: {str(e)}"
@@ -188,34 +235,96 @@ async def decode_financial_message(message: str) -> str:
 def verify_document_with_ai(file_bytes, mime_type, doc_type):
     """
     Verifies document using Vision capabilities of Gemini.
+    Uses gemini-1.5-flash which supports both text and image input.
     """
     try:
-        model = configure_gemini()
+        # Use gemini-2.5-flash for vision capabilities
+        model = configure_gemini('gemini-2.5-flash')
         
-        prompt = f"""
-        Analyze this image. Determine if it is a valid Indian {doc_type}.
-        Return a strict JSON response (no markdown formatting) with the following structure:
-        {{
-            "is_valid": true/false,
-            "extracted_id": "extracted number if found (e.g. Aadhaar/PAN number), else null",
-            "reason": "reason for validity or invalidity"
-        }}
-        """
+        import base64
+        
+        # Determine if this is an income proof or identity document
+        is_income_proof = doc_type.lower() in ['income proof', 'income_proof', 'salary slip', 'bank statement', 'earning proof']
+        
+        if is_income_proof:
+            prompt = f"""Analyze this uploaded document carefully. It is claimed to be an Income Proof document.
+
+Your task:
+1. Identify the type of document (salary slip, bank statement, payment screenshot, invoice, earnings report, etc.)
+2. Extract ALL monetary amounts visible in the document
+3. Identify the source/platform/employer name if visible
+4. Find any dates mentioned
+5. Calculate or identify the total earnings amount
+
+Return a strict JSON response (no markdown, no code blocks) with this exact structure:
+{{
+    "is_valid": true or false,
+    "document_type": "type of income document detected",
+    "extracted_id": null,
+    "total_amount": numeric total earnings amount found (just the number, no currency symbol),
+    "amounts_found": [list of individual amounts found as numbers],
+    "source_name": "platform or employer name if found, else Unknown",
+    "date_found": "date if found, else null",
+    "currency": "INR",
+    "description": "brief description of what the document shows",
+    "reason": "explanation of why valid or invalid as income proof"
+}}
+
+Be thorough in extracting amounts. Look for numbers preceded by Rs, ₹, INR, or in amount/total/earning/salary fields."""
+        else:
+            prompt = f"""Analyze this image carefully. It is claimed to be an Indian {doc_type}.
+
+Your task:
+1. Verify if this is genuinely a valid Indian {doc_type} document
+2. Check for standard government document features (logos, formatting, hologram indicators, etc.)
+3. Extract the document ID number if visible
+4. Check if the document appears authentic (not a random image, screenshot of text, or fake)
+
+For specific documents, verify:
+- Aadhaar Card: Must have UIDAI logo, 12-digit number (XXXX XXXX XXXX format), QR code, photo, name, DOB, address
+- PAN Card: Must have Income Tax Dept header, 10-character alphanumeric PAN (ABCDE1234F format), photo, name, DOB, signature
+- Driving License: Must have state transport authority header, DL number, photo, validity dates
+- Voter ID: Must have Election Commission logo, EPIC number, photo, name, address
+- Passport: Must have Republic of India header, passport number, photo, personal details
+
+Return a strict JSON response (no markdown, no code blocks) with this exact structure:
+{{
+    "is_valid": true or false,
+    "extracted_id": "extracted document number if found, else null",
+    "reason": "detailed reason for validity or invalidity, including what specific features were found or missing",
+    "document_features_found": ["list of authentic features detected"],
+    "confidence": "high/medium/low"
+}}
+
+IMPORTANT: Only mark as valid if the image actually shows a genuine-looking {doc_type}. Reject random images, screenshots, non-document images, or clearly fake documents."""
         
         image_part = {
             "mime_type": mime_type,
-            "data": file_bytes
+            "data": base64.b64encode(file_bytes).decode('utf-8') if isinstance(file_bytes, bytes) else file_bytes
         }
         
-        response = model.generate_content([prompt, image_part])
+        # Create the image content part properly for the API
+        image_content = genai.types.Part.from_data(data=file_bytes, mime_type=mime_type)
+        
+        response = _generate_with_retry(model, [prompt, image_content])
         
         # Clean response text to ensure JSON
         text = response.text.replace('```json', '').replace('```', '').strip()
-        import json
-        return json.loads(text)
+        result = json.loads(text)
+        
+        # For income proof, ensure proper amount extraction
+        if is_income_proof and result.get("is_valid"):
+            total = result.get("total_amount", 0)
+            if total == 0 and result.get("amounts_found"):
+                total = sum(result["amounts_found"])
+                result["total_amount"] = total
+        
+        return result
         
     except Exception as e:
         print(f"Error in AI verification: {e}")
+        import traceback
+        traceback.print_exc()
         return {
             "is_valid": False, 
             "extracted_id": None, 

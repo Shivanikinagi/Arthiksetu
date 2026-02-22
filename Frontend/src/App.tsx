@@ -29,7 +29,7 @@ export default function App() {
   const renderPage = () => {
     switch (currentPage) {
       case 'dashboard':
-        return <DashboardPage />;
+        return <DashboardPage onNavigate={(page: any) => setCurrentPage(page)} />;
       case 'unified-dashboard':
         return <UnifiedDashboard />;
       case 'sms-analyzer':

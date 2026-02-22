@@ -1,7 +1,7 @@
 import { Alert } from 'react-native';
 
-const API_KEY = "AIzaSyBW7pa0akQ24wxPwBy17TkaeJ3nh49gcG0"; // Updated Gemini API Key
-const MODEL_NAME = "gemini-pro";
+const API_KEY = "AIzaSyA83Qso7jWQL6b3dCgeBieq8FB2pgwFM2g"; // Updated Gemini API Key
+const MODEL_NAME = "gemini-2.5-flash";
 
 export const GeminiService = {
 
@@ -30,7 +30,7 @@ export const GeminiService = {
     // 2. Vision/Image Analysis (Verify Documents)
     analyzeImage: async (base64Image: string, prompt: string): Promise<string | null> => {
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${API_KEY}`, {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

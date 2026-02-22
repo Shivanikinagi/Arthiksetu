@@ -68,43 +68,67 @@ export function Loans() {
                     ) : (
                         loans.map((loan, idx) => (
                             <div key={loan.id} className="stagger-item group h-full">
-                                <Card className="h-full p-8 bg-white hover:shadow-2xl transition-all hover:-translate-y-2 border-0 ring-1 ring-gray-100 relative overflow-hidden flex flex-col">
+                                <Card className={`h-full p-8 bg-white hover:shadow-2xl transition-all hover:-translate-y-2 border-0 ring-1 ${loan.eligible ? 'ring-green-200' : 'ring-gray-100'} relative overflow-hidden flex flex-col`}>
                                     {/* Top decorative gradient bar */}
-                                    <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500"></div>
+                                    <div className={`absolute top-0 left-0 right-0 h-1.5 ${loan.eligible ? 'bg-gradient-to-r from-green-500 via-blue-500 to-green-500' : 'bg-gradient-to-r from-gray-300 via-gray-400 to-gray-300'}`}></div>
 
-                                    <div className="flex items-start justify-between mb-6">
+                                    {/* Eligibility badge */}
+                                    {loan.eligible !== undefined && (
+                                        <div className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-bold ${loan.eligible ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-red-50 text-red-600 border border-red-200'}`}>
+                                            {loan.eligible ? '✓ Eligible' : '✗ Income Too Low'}
+                                        </div>
+                                    )}
+
+                                    <div className="flex items-start justify-between mb-6 mt-2">
                                         <div>
                                             <h3 className="text-2xl font-bold text-gray-900 mb-1 group-hover:text-blue-700 transition-colors">{loan.lender}</h3>
                                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100">
                                                 Personal Loan
                                             </span>
+                                            {loan.interest_rate && (
+                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-100 ml-2">
+                                                    {loan.interest_rate} p.a.
+                                                </span>
+                                            )}
                                         </div>
-                                        <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center group-hover:bg-blue-50 transition-colors">
+                                        <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center group-hover:bg-blue-50 transition-colors mt-2">
                                             <Building2 className="w-5 h-5 text-gray-500 group-hover:text-blue-600" />
                                         </div>
                                     </div>
 
-                                    <div className="flex-1 space-y-6 mb-8">
+                                    <div className="flex-1 space-y-4 mb-8">
                                         <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
                                             <p className="text-sm text-gray-700 leading-relaxed font-medium">
                                                 {loan.notes || "High approval chance based on your profile."}
                                             </p>
                                         </div>
 
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-green-100 rounded-lg">
-                                                <ShieldCheck className="w-5 h-5 text-green-700" />
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-2 bg-green-100 rounded-lg">
+                                                    <ShieldCheck className="w-5 h-5 text-green-700" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-bold text-gray-500 uppercase">Min Income</p>
+                                                    <p className="text-lg font-bold text-gray-900">{loan.min_income_display || `₹${Number(loan.min_income).toLocaleString('en-IN')}`}</p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <p className="text-xs font-bold text-gray-500 uppercase">Min Income Required</p>
-                                                <p className="text-lg font-bold text-gray-900">₹{loan.min_income.toLocaleString('en-IN')}</p>
-                                            </div>
+                                            {loan.max_loan && (
+                                                <div className="text-right">
+                                                    <p className="text-xs font-bold text-gray-500 uppercase">Max Loan</p>
+                                                    <p className="text-lg font-bold text-blue-700">₹{Number(loan.max_loan).toLocaleString('en-IN')}</p>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
                                     <Button
-                                        className="w-full py-6 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-blue-500/25 transition-all group-hover:scale-[1.02]"
+                                        className={`w-full py-6 font-bold text-lg rounded-xl shadow-lg transition-all group-hover:scale-[1.02] ${loan.eligible ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white hover:shadow-blue-500/25' : 'bg-gray-200 text-gray-500 cursor-not-allowed hover:bg-gray-200'}`}
                                         onClick={() => {
+                                            if (!loan.eligible) {
+                                                alert(`You need a minimum monthly income of ${loan.min_income_display || '₹' + Number(loan.min_income).toLocaleString('en-IN')} to apply. Add more income proofs to increase your eligibility.`);
+                                                return;
+                                            }
                                             if (loan.link) {
                                                 window.open(loan.link, '_blank');
                                             } else {
@@ -112,7 +136,7 @@ export function Loans() {
                                             }
                                         }}
                                     >
-                                        Apply Now <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                                        {loan.eligible ? 'Apply Now' : 'Not Eligible'} <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                                     </Button>
 
                                     {/* Verification Badge */}

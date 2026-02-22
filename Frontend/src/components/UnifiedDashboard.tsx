@@ -8,15 +8,9 @@ import { API_BASE_URL } from '../config';
 const COLORS = ['#F7931E', '#0A1F44', '#1E7F5C', '#3B82F6', '#F59E0B', '#8B5CF6'];
 
 export function UnifiedDashboard() {
-    const [platformData, setPlatformData] = useState({
-        'Swiggy': 15000,
-        'Zomato': 12000,
-        'Uber': 18000,
-        'Ola': 8000,
-        'UrbanCompany': 10000,
-    });
+    const [platformData, setPlatformData] = useState<Record<string, number>>({});
     const [analysis, setAnalysis] = useState<any>(null);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [riskPrediction, setRiskPrediction] = useState<any>(null);
 
     const totalEarnings = Object.values(platformData).reduce((sum, val) => sum + val, 0);
@@ -24,25 +18,44 @@ export function UnifiedDashboard() {
     const fetchAnalysis = async () => {
         setLoading(true);
         try {
+            // First fetch actual income sources from dashboard
+            const dashResponse = await fetch(`${API_BASE_URL}/api/dashboard`);
+            const dashData = await dashResponse.json();
+            const sources = dashData.incomeSources || [];
+            
+            // Build platform data from actual income sources
+            const dynPlatformData: Record<string, number> = {};
+            sources.forEach((s: any) => {
+                const name = s.name || s.source || 'Other';
+                dynPlatformData[name] = (dynPlatformData[name] || 0) + (s.amount || 0);
+            });
+            
+            // If no income sources exist, show a message instead of hardcoded data
+            if (Object.keys(dynPlatformData).length === 0) {
+                setPlatformData({});
+                setLoading(false);
+                return;
+            }
+            
+            setPlatformData(dynPlatformData);
+            const dynTotal = Object.values(dynPlatformData).reduce((sum, val) => sum + val, 0);
+
             const response = await fetch(`${API_BASE_URL}/api/unified_dashboard`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    platform_data: platformData,
-                    total_earnings: totalEarnings
+                    platform_data: dynPlatformData,
+                    total_earnings: dynTotal
                 })
             });
             const data = await response.json();
             setAnalysis(data);
 
-            // Also fetch risk prediction
-            const earningsHistory = [
-                { date: '2025-01', amount: 45000 },
-                { date: '2025-02', amount: 48000 },
-                { date: '2025-03', amount: 42000 },
-                { date: '2025-04', amount: 51000 },
-                { date: '2025-05', amount: totalEarnings },
-            ];
+            // Build earnings history from monthly data
+            const monthlyData = dashData.earningsData || [];
+            const earningsHistory = monthlyData.length > 0 
+                ? monthlyData.map((m: any) => ({ date: m.month, amount: m.amount }))
+                : [{ date: new Date().toISOString().slice(0, 7), amount: dynTotal }];
 
             const riskResponse = await fetch(`${API_BASE_URL}/api/predict_risk`, {
                 method: 'POST',
@@ -104,6 +117,22 @@ export function UnifiedDashboard() {
                     </Button>
                 </div>
 
+                {/* No Data Message */}
+                {!loading && Object.keys(platformData).length === 0 && (
+                    <Card className="p-12 bg-white text-center border-2 border-dashed border-gray-300 rounded-2xl">
+                        <div className="flex flex-col items-center gap-4">
+                            <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center">
+                                <LayoutDashboard className="w-8 h-8 text-indigo-600" />
+                            </div>
+                            <h3 className="text-xl font-bold text-[#0A1F44]">No Earnings Data Yet</h3>
+                            <p className="text-gray-600 max-w-md">
+                                Upload income proofs or use SMS Analyzer on the Dashboard to start tracking your earnings across platforms.
+                            </p>
+                        </div>
+                    </Card>
+                )}
+
+                {Object.keys(platformData).length > 0 && (<>
                 {/* Summary Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in-up">
                     <Card className="p-8 text-white rounded-2xl shadow-xl relative overflow-hidden group hover:shadow-2xl transition-all hover:-translate-y-1" style={{ background: 'linear-gradient(135deg, #0A1F44 0%, #1E3A5F 100%)' }}>
@@ -354,6 +383,7 @@ export function UnifiedDashboard() {
                         ))}
                     </div>
                 </Card>
+                </>)}
             </div>
         </div>
     );
