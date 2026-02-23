@@ -1,6 +1,8 @@
 import { Alert } from 'react-native';
+import Constants from 'expo-constants';
 
-const API_KEY = "AIzaSyA83Qso7jWQL6b3dCgeBieq8FB2pgwFM2g"; // Updated Gemini API Key
+// Load API key from environment (app.json extra or .env)
+const API_KEY = Constants.expoConfig?.extra?.geminiApiKey || process.env.GEMINI_API_KEY || "";
 const MODEL_NAME = "gemini-2.5-flash";
 
 export const GeminiService = {

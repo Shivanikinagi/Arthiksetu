@@ -10,13 +10,15 @@ import re
 from datetime import datetime, timedelta
 from typing import List, Dict
 
-# Configure API keys with rotation support
-API_KEYS = [
-    os.getenv("GEMINI_API_KEY", "AIzaSyA83Qso7jWQL6b3dCgeBieq8FB2pgwFM2g"),
-    "AIzaSyAAZKZN8wVdSX9P6pJzA5NV65BYX1ADYWw",
-    "AIzaSyDKwSJ8r3rCuslVV20OzuClp2I7rmGYu_Y",
-    "AIzaSyCMAT0fzY9jrWhckh13hDr9JnQB5sU1npI",
-]
+# Load API key from environment variable only (never hardcode keys!)
+from dotenv import load_dotenv
+load_dotenv()
+
+_gemini_api_key = os.getenv("GEMINI_API_KEY", "")
+if not _gemini_api_key:
+    print("WARNING: GEMINI_API_KEY not set in .env file. AI features will not work.")
+
+API_KEYS = [k.strip() for k in _gemini_api_key.split(",") if k.strip()]
 _current_key_index = 0
 
 def configure_gemini(model_name='gemini-2.5-flash'):

@@ -7,15 +7,15 @@ import { getAuth, GoogleAuthProvider } from "firebase/auth";
 // https://firebase.google.com/docs/web/setup#available-libraries
 
 // Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// Values loaded from environment variables (set in .env file)
 const firebaseConfig = {
-  apiKey: "AIzaSyDuuSqhYlN27D4aglBXaIc5ysG-vaaoTuY",
-  authDomain: "arthiksetu-e4fbe.firebaseapp.com",
-  projectId: "arthiksetu-e4fbe",
-  storageBucket: "arthiksetu-e4fbe.firebasestorage.app",
-  messagingSenderId: "623914854162",
-  appId: "1:623914854162:web:1f6a7146490e041a9f35cb",
-  measurementId: "G-FL5KY0FDMG"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || ""
 };
 
 // Initialize Firebase
