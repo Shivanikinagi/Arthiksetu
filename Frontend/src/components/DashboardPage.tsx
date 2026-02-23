@@ -283,17 +283,7 @@ export function DashboardPage({ onNavigate }: { onNavigate?: (page: string) => v
               </div>
               <h3 className="text-base font-bold text-gray-900 mb-2">AI Assistant</h3>
               <p className="text-sm text-gray-600 leading-relaxed">
-                Chat for personalized financial advice
-              </p>
-            </Card>
-
-            <Card onClick={() => onNavigate?.('message-decoder')} className="p-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg transition-all transform hover:-translate-y-1 cursor-pointer">
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-4">
-                <FileSearch className="w-6 h-6 text-green-600" />
-              </div>
-              <h3 className="text-base font-bold text-gray-900 mb-2">Message Decoder</h3>
-              <p className="text-sm text-gray-600 leading-relaxed">
-                Decode confusing bank and platform messages
+                Chat for financial advice, decode messages & more
               </p>
             </Card>
 

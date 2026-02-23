@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
-import { CheckCircle, Clock, Gift, ArrowRight, TrendingUp, Shield, Heart, Sparkles, ExternalLink, RefreshCw } from 'lucide-react';
+import { CheckCircle, Clock, Gift, ArrowRight, TrendingUp, Shield, Heart, Sparkles, ExternalLink, RefreshCw, AlertTriangle } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 
 // Icon mapping since we can't send components from backend
@@ -152,9 +152,21 @@ export function SchemesPage() {
 
         {/* Scheme Cards */}
         <div className="animate-fade-in-up">
-          <div className="mb-8">
+          <div className="mb-6">
             <h3 className="text-3xl font-bold text-gray-900 heading-primary">Available Schemes</h3>
             <p className="text-gray-500 mt-1">Personalized recommendations based on your profile</p>
+          </div>
+
+          {/* Official Redirect Disclaimer */}
+          <div className="flex items-start gap-3 px-5 py-4 bg-blue-50 border border-blue-200 rounded-2xl mb-8">
+            <AlertTriangle className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-bold text-blue-900">All scheme links redirect to official government portals (.gov.in)</p>
+              <p className="text-sm text-blue-800 mt-0.5">
+                ArthikSetu only helps you discover eligibility. <strong>We never act as a middleman, collect fees,
+                or handle government money.</strong> Clicking "Apply Now" takes you directly to the scheme's official government website.
+              </p>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -208,7 +220,7 @@ export function SchemesPage() {
                     </div>
 
                     <Button
-                      onClick={() => scheme.url && window.open(scheme.url, '_blank')}
+                      onClick={() => scheme.url && window.open(scheme.url, '_blank', 'noopener,noreferrer')}
                       className={`w-full py-4 rounded-xl font-bold text-base transition-all group/btn ${isEligible
                         ? 'bg-gradient-to-r from-[#F7931E] to-[#ff9f3a] hover:from-[#ff9f3a] hover:to-[#ffb366] text-white shadow-lg hover:shadow-xl border-0'
                         : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300'
@@ -216,7 +228,7 @@ export function SchemesPage() {
                     >
                       {isEligible ? (
                         <>
-                          Apply Now
+                          Apply on Official Site
                           <ExternalLink className="w-5 h-5 ml-2 group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
                         </>
                       ) : (
@@ -226,6 +238,11 @@ export function SchemesPage() {
                         </>
                       )}
                     </Button>
+                    {isEligible && scheme.url && (
+                      <p className="text-xs text-center text-gray-400 mt-2">
+                        Opens <span className="font-medium text-gray-500">{(() => { try { return new URL(scheme.url).hostname; } catch { return scheme.url; } })()}</span> in a new tab
+                      </p>
+                    )}
                   </div>
                 </Card>
               );

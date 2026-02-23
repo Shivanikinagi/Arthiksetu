@@ -29,7 +29,7 @@ SCHEMES_DB = [
         "citizenship": "Indian"
     },
     "category": "Pension",
-    "url": "https://www.npscra.nsdl.co.in/scheme-details.php"
+    "url": "https://www.india.gov.in/spotlight/atal-pension-yojana"
   },
   {
     "id": 3,
@@ -45,7 +45,7 @@ SCHEMES_DB = [
         "has_bank_account": True
     },
     "category": "Insurance",
-    "url": "https://financialservices.gov.in/beta/en/pmjjby"
+    "url": "https://www.jansuraksha.gov.in/Forms-PMJJBY.aspx"
   },
   {
     "id": 4,
@@ -61,7 +61,7 @@ SCHEMES_DB = [
         "has_bank_account": True
     },
     "category": "Insurance",
-    "url": "https://financialservices.gov.in/beta/en/pmsby"
+    "url": "https://www.jansuraksha.gov.in/Forms-PMSBY.aspx"
   },
   {
     "id": 5,

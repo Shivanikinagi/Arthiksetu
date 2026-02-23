@@ -141,30 +141,43 @@ async def parse_sms_with_ai(messages: List[str]) -> List[Dict]:
 
 async def chat_with_ai_assistant(message: str, history: List[Dict]) -> str:
     """
-    AI Earnings Assistant Chatbot - conversational interface.
+    Unified AI Assistant - handles ALL platform features conversationally.
+    Can parse SMS, decode messages, recommend schemes, help with taxes, and more.
     """
     try:
         model = configure_gemini()
         
         # Build context from history
-        context = "\\n".join([f"{h['role']}: {h['content']}" for h in history[-10:]])
+        context = "\n".join([f"{h['role']}: {h['content']}" for h in history[-10:]])
         
-        prompt = f"""
-        You are an AI assistant for gig workers in India helping them track income and manage finances.
-        
-        Previous conversation:
-        {context}
-        
-        User: {message}
-        
-        Provide helpful, encouraging advice about:
-        - Income tracking
-        - Financial planning
-        - Government schemes
-        - Gig economy tips
-        
-        Keep responses under 100 words and friendly.
-        """
+        prompt = f"""You are "ArthikSetu Assistant" — a comprehensive, friendly AI assistant for India's gig workers (delivery partners, drivers, freelancers, etc.). 
+You help with EVERYTHING on the ArthikSetu platform. You speak in simple English mixed with Hindi (Hinglish) when helpful for the user.
+
+YOUR CAPABILITIES:
+1. **SMS & Transaction Analysis**: If the user pastes an SMS or transaction message, extract the amount, merchant, credit/debit type, and explain it simply.
+2. **Financial Message Decoder**: If the user sends a confusing bank/platform message, explain what it means in simple language.
+3. **Government Schemes**: Recommend relevant schemes (PM-SVANidhi, Atal Pension Yojana, PMJJBY, Ayushman Bharat, PMEGP, Stand-Up India, PM-SBY) based on the user's profile.
+4. **Tax Guidance**: Explain Indian tax slabs (New Regime FY 2024-25), help estimate tax, explain TDS, Section 87A rebate, and ITR filing.
+5. **Loan Advice**: Guide users about personal loans from banks like Kotak, Axis, Bajaj Finserv, IDFC FIRST, HDFC, IDBI — mention minimum income requirements.
+6. **Income Tracking Tips**: Help users track earnings from multiple gig platforms (Swiggy, Zomato, Uber, Ola, UrbanCompany, Porter, etc.)
+7. **Document Verification Help**: Guide users on how to upload and verify Aadhaar, PAN, and other documents on the platform.
+8. **Financial Planning**: Provide savings tips, emergency fund advice, and budgeting strategies for irregular income.
+9. **Platform Navigation**: Help users navigate ArthikSetu features — Dashboard, SMS Analyzer, Tax Calculator, Schemes, Loans, Reports, Document Verification, Profile.
+
+RULES:
+- Keep responses concise (under 150 words unless the user asks for detail).
+- Be encouraging and supportive — many users are first-time digital finance users.
+- Use rupee symbol for Indian currency.
+- If a user pastes an SMS, automatically analyze it without being asked.
+- If asked about a scheme, provide eligibility criteria and the apply URL.
+- Never give incorrect tax advice — always recommend visiting incometax.gov.in for official filing.
+- Format responses with bullet points and emojis for readability.
+
+Previous conversation:
+{context}
+
+User: {message}
+"""
         
         response = _generate_with_retry(model, prompt)
         return response.text
@@ -274,20 +287,51 @@ Return a strict JSON response (no markdown, no code blocks) with this exact stru
 
 Be thorough in extracting amounts. Look for numbers preceded by Rs, ₹, INR, or in amount/total/earning/salary fields."""
         else:
-            prompt = f"""Analyze this image carefully. It is claimed to be an Indian {doc_type}.
+            prompt = f"""You are an expert Indian document verification AI. Analyze this image VERY CAREFULLY. It is claimed to be an Indian {doc_type}.
 
 Your task:
 1. Verify if this is genuinely a valid Indian {doc_type} document
-2. Check for standard government document features (logos, formatting, hologram indicators, etc.)
+2. Check for ALL mandatory government document features 
 3. Extract the document ID number if visible
 4. Check if the document appears authentic (not a random image, screenshot of text, or fake)
 
-For specific documents, verify:
-- Aadhaar Card: Must have UIDAI logo, 12-digit number (XXXX XXXX XXXX format), QR code, photo, name, DOB, address
-- PAN Card: Must have Income Tax Dept header, 10-character alphanumeric PAN (ABCDE1234F format), photo, name, DOB, signature
-- Driving License: Must have state transport authority header, DL number, photo, validity dates
-- Voter ID: Must have Election Commission logo, EPIC number, photo, name, address
-- Passport: Must have Republic of India header, passport number, photo, personal details
+STRICT VERIFICATION CRITERIA:
+
+For **Aadhaar Card** (MUST have ALL of these):
+- UIDAI (Unique Identification Authority of India) logo/emblem clearly visible
+- Government of India / भारत सरकार text
+- 12-digit Aadhaar number in XXXX XXXX XXXX format (masked or full)
+- Passport-style photograph of the cardholder
+- Full name of the cardholder in both English and Hindi/regional language
+- Date of Birth or Year of Birth
+- Gender (Male/Female/Transgender)
+- Address of the cardholder
+- QR code (mandatory on all genuine Aadhaar cards)
+- The card should have the standard Aadhaar card layout (blue header with Aadhaar logo)
+- Reject if: no photo, no QR code, no UIDAI logo, number is not 12 digits, or image shows just text/numbers without card format
+
+For **PAN Card** (MUST have ALL of these):
+- "INCOME TAX DEPARTMENT" or "आयकर विभाग" header text clearly visible at the top
+- "GOVT. OF INDIA" or "भारत सरकार" text 
+- The word "Permanent Account Number" or "PAN" prominently displayed
+- 10-character PAN number in EXACT format: 5 uppercase letters + 4 digits + 1 uppercase letter (e.g., ABCDE1234F)
+  * First 3 characters: AAA to ZZZ (alphabetic series)
+  * 4th character: C/P/H/F/A/T/B/L/J/G (entity type)
+  * 5th character: First letter of surname
+  * Next 4: sequential digits 0001-9999
+  * Last: check letter A-Z
+- Passport-style photograph of the cardholder
+- Full name of the cardholder
+- Father's name
+- Date of Birth
+- Signature of the cardholder
+- Embossed or printed hologram (if physical card)
+- The Indian national emblem (Ashoka Pillar / Lion Capital)
+- Reject if: no photo, PAN format invalid, no "Income Tax Department" text, random image or screenshot, just a number without card layout
+
+For **Driving License**: Must have state transport authority header, DL number, photo, validity dates
+For **Voter ID**: Must have Election Commission logo, EPIC number, photo, name, address
+For **Passport**: Must have Republic of India header, passport number, photo, personal details
 
 Return a strict JSON response (no markdown, no code blocks) with this exact structure:
 {{
@@ -305,10 +349,8 @@ IMPORTANT: Only mark as valid if the image actually shows a genuine-looking {doc
             "data": base64.b64encode(file_bytes).decode('utf-8') if isinstance(file_bytes, bytes) else file_bytes
         }
         
-        # Create the image content part properly for the API
-        image_content = genai.types.Part.from_data(data=file_bytes, mime_type=mime_type)
-        
-        response = _generate_with_retry(model, [prompt, image_content])
+        # Use inline_data dict format compatible with all google-generativeai versions
+        response = _generate_with_retry(model, [prompt, {"inline_data": image_part}])
         
         # Clean response text to ensure JSON
         text = response.text.replace('```json', '').replace('```', '').strip()

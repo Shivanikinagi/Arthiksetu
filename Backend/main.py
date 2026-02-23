@@ -1,4 +1,5 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Query
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from typing import List, Optional, Dict
 from sms_parser import SMSParser
@@ -6,6 +7,10 @@ from schemes import get_eligible_schemes, SCHEMES_DB, simplify_scheme_explanatio
 from fastapi.middleware.cors import CORSMiddleware
 import asyncio
 import json
+import os
+import secrets
+import urllib.parse
+import httpx
 from datetime import datetime, timedelta
 import numpy as np
 from gemini_service import (
@@ -37,9 +42,20 @@ chat_sessions = {}
 # ============================================
 # This stores all earnings data dynamically
 earnings_store = {
-    "income_sources": [],
-    "monthly_earnings": [],
-    "total_monthly_income": 0,
+    "income_sources": [
+        {"name": "Zomato", "amount": 14500, "verified": True, "source": "Zomato", "description": "Food delivery earnings - Zomato", "upload_time": "2025-02-01T09:00:00"},
+        {"name": "Swiggy", "amount": 11200, "verified": True, "source": "Swiggy", "description": "Food delivery earnings - Swiggy", "upload_time": "2025-02-01T09:05:00"},
+        {"name": "Uber", "amount": 8900, "verified": True, "source": "Uber", "description": "Ride-sharing earnings - Uber", "upload_time": "2025-02-01T09:10:00"},
+    ],
+    "monthly_earnings": [
+        {"month": "Sep", "amount": 28400},
+        {"month": "Oct", "amount": 31200},
+        {"month": "Nov", "amount": 26800},
+        {"month": "Dec", "amount": 35600},
+        {"month": "Jan", "amount": 30500},
+        {"month": "Feb", "amount": 34600},
+    ],
+    "total_monthly_income": 34600,
 }
 
 def get_total_monthly_income():
@@ -351,7 +367,7 @@ def get_loans():
             "max_loan": 300000,
             "interest_rate": "10.50%",
             "notes": "Microfinance loans for low-income households and self-help groups.",
-            "link": "https://www.idbibank.in/personal-loan.aspx",
+            "link": "https://www.idbibank.in/personal-banking/loans/personal-loan.html",
             "eligible": monthly_income >= 8000
         }
     ]
@@ -673,6 +689,238 @@ def download_report(report_id: str):
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# =================== OTP VERIFICATION ===================
+import random
+import hashlib
+
+# In-memory OTP store (use Redis/DB in production)
+otp_store: Dict[str, Dict] = {}
+
+class OTPRequest(BaseModel):
+    target: str  # phone number or email
+    type: str    # "phone" or "email"
+
+class OTPVerifyRequest(BaseModel):
+    target: str
+    type: str
+    otp: str
+
+def _hash_target(target: str) -> str:
+    """Hash the target (phone/email) for secure storage."""
+    return hashlib.sha256(target.strip().lower().encode()).hexdigest()
+
+@app.post("/api/send_otp")
+async def send_otp(request: OTPRequest):
+    """
+    Send OTP to phone number or email.
+    In production, integrate with an SMS gateway (e.g., Twilio, MSG91) or email service.
+    For demo, generates a 6-digit OTP and stores it in memory.
+    """
+    try:
+        target = request.target.strip()
+        otp_type = request.type.strip().lower()
+        
+        if otp_type not in ["phone", "email"]:
+            raise HTTPException(status_code=400, detail="Type must be 'phone' or 'email'")
+        
+        # Validate format
+        if otp_type == "phone":
+            # Basic Indian phone validation
+            clean_phone = target.replace(" ", "").replace("+91", "").replace("-", "")
+            if not (clean_phone.isdigit() and len(clean_phone) == 10):
+                raise HTTPException(status_code=400, detail="Invalid phone number. Enter 10-digit Indian mobile number.")
+        elif otp_type == "email":
+            if "@" not in target or "." not in target:
+                raise HTTPException(status_code=400, detail="Invalid email address.")
+        
+        # Generate 6-digit OTP
+        otp = str(random.randint(100000, 999999))
+        
+        # Store OTP with expiry (5 minutes)
+        key = _hash_target(target)
+        otp_store[key] = {
+            "otp": otp,
+            "target": target,
+            "type": otp_type,
+            "created_at": datetime.now().isoformat(),
+            "attempts": 0
+        }
+        
+        # In production, send via SMS gateway or email service here
+        # For demo, we accept "123456" as a universal OTP and also log the real one
+        print(f"[OTP] Generated OTP {otp} for {otp_type}: {target}")
+        
+        return {
+            "success": True,
+            "message": f"OTP sent to {target}",
+            "demo_hint": "Use 123456 for demo verification"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/verify_otp")
+async def verify_otp(request: OTPVerifyRequest):
+    """
+    Verify OTP for phone or email.
+    Accepts the actual generated OTP or '123456' for demo purposes.
+    """
+    try:
+        target = request.target.strip()
+        otp = request.otp.strip()
+        otp_type = request.type.strip().lower()
+        
+        key = _hash_target(target)
+        stored = otp_store.get(key)
+        
+        # Rate limiting: max 5 attempts
+        if stored and stored.get("attempts", 0) >= 5:
+            return {"success": False, "message": "Too many attempts. Please request a new OTP."}
+        
+        # Accept demo OTP "123456" or the actual generated OTP
+        if otp == "123456" or (stored and stored.get("otp") == otp):
+            # Clean up used OTP
+            if key in otp_store:
+                del otp_store[key]
+            
+            return {
+                "success": True,
+                "message": f"{otp_type.capitalize()} verified successfully",
+                "verified_target": target
+            }
+        else:
+            # Increment attempt counter
+            if stored:
+                stored["attempts"] = stored.get("attempts", 0) + 1
+            
+            return {
+                "success": False,
+                "message": "Invalid OTP. Please try again."
+            }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ---------------------------------------------------------------------------
+# DigiLocker OAuth2 Integration
+# Register your app at https://developer.digitallocker.gov.in/ to get credentials
+# ---------------------------------------------------------------------------
+
+DIGILOCKER_CLIENT_ID = os.getenv("DIGILOCKER_CLIENT_ID", "DEMO_CLIENT_ID")
+DIGILOCKER_CLIENT_SECRET = os.getenv("DIGILOCKER_CLIENT_SECRET", "DEMO_CLIENT_SECRET")
+DIGILOCKER_REDIRECT_URI = os.getenv("DIGILOCKER_REDIRECT_URI", "http://localhost:8000/api/digilocker/callback")
+FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:3001")
+
+DIGILOCKER_AUTH_URL = "https://api.digitallocker.gov.in/public/oauth2/1/authorize"
+DIGILOCKER_TOKEN_URL = "https://api.digitallocker.gov.in/public/oauth2/1/token"
+DIGILOCKER_ISSUED_FILES_URL = "https://api.digitallocker.gov.in/public/oauth2/1/files/issued"
+
+# Temporary state storage (use Redis in production)
+digilocker_states: Dict[str, dict] = {}
+
+
+@app.get("/api/digilocker/auth-url")
+def get_digilocker_auth_url(doc_type: str = Query(default="aadhaar")):
+    """
+    Generate the official DigiLocker OAuth2 authorization URL.
+    The user is redirected to https://digitallocker.gov.in to authenticate
+    using their Aadhaar-linked mobile OTP — no document upload required.
+    """
+    is_demo = DIGILOCKER_CLIENT_ID == "DEMO_CLIENT_ID"
+    state = secrets.token_urlsafe(16)
+    digilocker_states[state] = {
+        "doc_type": doc_type,
+        "created_at": datetime.now().isoformat()
+    }
+    params = {
+        "response_type": "code",
+        "client_id": DIGILOCKER_CLIENT_ID,
+        "redirect_uri": DIGILOCKER_REDIRECT_URI,
+        "state": state,
+    }
+    auth_url = DIGILOCKER_AUTH_URL + "?" + urllib.parse.urlencode(params)
+    return {
+        "auth_url": auth_url,
+        "state": state,
+        "is_demo": is_demo,
+        "note": "Redirects to official DigiLocker (digitallocker.gov.in). No documents uploaded to ArthikSetu." if is_demo else None,
+        "setup_url": "https://developer.digitallocker.gov.in/" if is_demo else None,
+    }
+
+
+@app.get("/api/digilocker/callback")
+async def digilocker_callback(code: str = Query(...), state: str = Query(...)):
+    """
+    Handle the OAuth2 callback from DigiLocker.
+    Exchanges the authorization code for an access token and fetches issued documents.
+    Redirects the user back to the frontend with the verification result.
+    """
+    if state not in digilocker_states:
+        raise HTTPException(status_code=400, detail="Invalid or expired OAuth state. Please try again.")
+
+    state_data = digilocker_states.pop(state)
+    doc_type = state_data.get("doc_type", "aadhaar")
+
+    is_demo = DIGILOCKER_CLIENT_ID == "DEMO_CLIENT_ID"
+    if is_demo:
+        # In demo mode: simulate a successful verification
+        result_params = urllib.parse.urlencode({
+            "digilocker_status": "verified",
+            "doc_type": doc_type,
+            "source": "DigiLocker",
+            "message": f"{doc_type.upper()} verified via DigiLocker (demo mode)",
+            "confidence": "0.99",
+        })
+        return RedirectResponse(url=f"{FRONTEND_ORIGIN}/document-verify?{result_params}")
+
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            # Exchange code for access token
+            token_resp = await client.post(DIGILOCKER_TOKEN_URL, data={
+                "code": code,
+                "grant_type": "authorization_code",
+                "client_id": DIGILOCKER_CLIENT_ID,
+                "client_secret": DIGILOCKER_CLIENT_SECRET,
+                "redirect_uri": DIGILOCKER_REDIRECT_URI,
+            })
+            token_data = token_resp.json()
+            access_token = token_data.get("access_token")
+
+            if not access_token:
+                error_params = urllib.parse.urlencode({
+                    "digilocker_status": "error",
+                    "message": "Failed to obtain access token from DigiLocker."
+                })
+                return RedirectResponse(url=f"{FRONTEND_ORIGIN}/document-verify?{error_params}")
+
+            # Fetch issued documents (Aadhaar, PAN, Driving Licence, etc.)
+            files_resp = await client.get(
+                DIGILOCKER_ISSUED_FILES_URL,
+                headers={"Authorization": f"Bearer {access_token}"}
+            )
+            files_data = files_resp.json()
+            issued_docs = files_data.get("items", [])
+
+            result_params = urllib.parse.urlencode({
+                "digilocker_status": "verified",
+                "doc_type": doc_type,
+                "source": "DigiLocker",
+                "message": f"{doc_type.upper()} verified via official DigiLocker",
+                "confidence": "0.99",
+                "doc_count": len(issued_docs),
+            })
+            return RedirectResponse(url=f"{FRONTEND_ORIGIN}/document-verify?{result_params}")
+
+    except Exception as e:
+        error_params = urllib.parse.urlencode({
+            "digilocker_status": "error",
+            "message": f"DigiLocker connection failed: {str(e)}"
+        })
+        return RedirectResponse(url=f"{FRONTEND_ORIGIN}/document-verify?{error_params}")
 
 
 if __name__ == "__main__":

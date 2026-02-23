@@ -24,7 +24,12 @@ export function ReportsPage() {
             <h1 className="text-4xl font-black text-gray-900 mb-2 heading-display">Reports & Documents</h1>
             <p className="text-gray-600 text-lg">Securely download your verified income reports and legitimate tax documents.</p>
           </div>
-          <Button className="bg-[#0A1F44] hover:bg-[#152c57] text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all">
+          <Button 
+            className="bg-[#0A1F44] hover:bg-[#152c57] text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all"
+            onClick={() => {
+              window.open(`${API_BASE_URL}/api/generate_report`, '_blank');
+            }}
+          >
             <Calendar className="w-5 h-5 mr-2" />
             Generate Custom Report
           </Button>

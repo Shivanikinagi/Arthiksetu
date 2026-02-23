@@ -2,8 +2,8 @@ import { Building2, FileText, Gift, BarChart3, User, Bot, Landmark, MessageSquar
 import { useState } from 'react';
 
 interface NavigationProps {
-  currentPage: 'dashboard' | 'unified-dashboard' | 'sms-analyzer' | 'tax' | 'schemes' | 'loans' | 'reports' | 'profile' | 'ai-assistant' | 'message-decoder' | 'document-verify';
-  onNavigate: (page: 'dashboard' | 'unified-dashboard' | 'sms-analyzer' | 'tax' | 'schemes' | 'loans' | 'reports' | 'profile' | 'ai-assistant' | 'message-decoder' | 'document-verify') => void;
+  currentPage: 'dashboard' | 'unified-dashboard' | 'sms-analyzer' | 'tax' | 'schemes' | 'loans' | 'reports' | 'profile' | 'ai-assistant' | 'document-verify';
+  onNavigate: (page: 'dashboard' | 'unified-dashboard' | 'sms-analyzer' | 'tax' | 'schemes' | 'loans' | 'reports' | 'profile' | 'ai-assistant' | 'document-verify') => void;
 }
 
 export function Navigation({ currentPage, onNavigate }: NavigationProps) {
@@ -14,7 +14,6 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
     { id: 'unified-dashboard' as const, label: 'Unified Dashboard' },
     { id: 'sms-analyzer' as const, label: 'SMS Analyzer' },
     { id: 'ai-assistant' as const, label: 'AI Assistant' },
-    { id: 'message-decoder' as const, label: 'Decoder' },
     { id: 'document-verify' as const, label: 'Verify Docs' },
     { id: 'tax' as const, label: 'Tax & ITR' },
     { id: 'schemes' as const, label: 'Schemes' },

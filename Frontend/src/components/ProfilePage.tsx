@@ -414,15 +414,39 @@ export function ProfilePage() {
             </Card>
 
             <Card className="p-6 bg-gradient-to-br from-[#0A1F44] to-[#1e3a5f] text-white rounded-3xl shadow-lg border-0 relative overflow-hidden">
-              <div className="relative z-10 flex items-start gap-4">
-                <div className="p-2 bg-white/10 rounded-lg shrink-0">
-                  <Shield className="w-6 h-6 text-blue-200" />
+              <div className="relative z-10 space-y-4">
+                <div className="flex items-start gap-4">
+                  <div className="p-2 bg-white/10 rounded-lg shrink-0">
+                    <Shield className="w-6 h-6 text-blue-200" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg mb-2">Bank-Grade Security</h3>
+                    <p className="text-sm text-blue-100 leading-relaxed opacity-90">
+                      Your data is protected with AES-256 encryption at rest and TLS 1.3 in transit. We comply with India's DPDP Act 2023.
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-bold text-lg mb-2">Secure & Private</h3>
-                  <p className="text-sm text-blue-100 leading-relaxed opacity-90">
-                    Your data is protected with bank-grade encryption. We strictly strictly adhere to Indian data privacy laws.
-                  </p>
+                <div className="space-y-2 pt-2 border-t border-white/10">
+                  <div className="flex items-center gap-2 text-sm text-blue-100">
+                    <Lock className="w-4 h-4 text-green-400" />
+                    <span>End-to-end encrypted document storage</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-blue-100">
+                    <ShieldCheck className="w-4 h-4 text-green-400" />
+                    <span>Aadhaar data never stored — verified & discarded</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-blue-100">
+                    <Lock className="w-4 h-4 text-green-400" />
+                    <span>PAN masked & tokenized after verification</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-blue-100">
+                    <Shield className="w-4 h-4 text-green-400" />
+                    <span>Zero third-party data sharing</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-blue-100">
+                    <ShieldCheck className="w-4 h-4 text-green-400" />
+                    <span>SOC 2 Type II compliant infrastructure</span>
+                  </div>
                 </div>
               </div>
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16"></div>

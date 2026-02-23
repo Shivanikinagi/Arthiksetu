@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
-import { ChevronRight, Percent, Clock, ShieldCheck, Banknote, Sparkles, Building2 } from 'lucide-react';
+import { ChevronRight, Percent, Clock, ShieldCheck, Banknote, Sparkles, Building2, AlertTriangle, ExternalLink } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 
 export function Loans() {
@@ -45,6 +45,19 @@ export function Loans() {
                             <p className="text-2xl font-black text-gray-900 heading-display">₹{userIncome.toLocaleString('en-IN')}</p>
                         </div>
                     </Card>
+                </div>
+
+                {/* Official Disclaimer Banner */}
+                <div className="flex items-start gap-3 px-5 py-4 bg-amber-50 border border-amber-200 rounded-2xl">
+                    <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+                    <div className="flex-1">
+                        <p className="text-sm font-bold text-amber-900">ArthikSetu is not a lender or financial intermediary</p>
+                        <p className="text-sm text-amber-800 mt-0.5">
+                            We only recommend loans based on your profile. Clicking <strong>"Apply Now"</strong> takes you
+                            directly to the official bank's website. <strong>We never collect payments, handle loan disbursals,
+                            or store your financial credentials.</strong>
+                        </p>
+                    </div>
                 </div>
 
                 {/* Main Content Grid */}
@@ -130,14 +143,24 @@ export function Loans() {
                                                 return;
                                             }
                                             if (loan.link) {
-                                                window.open(loan.link, '_blank');
-                                            } else {
-                                                alert(`Application for ${loan.lender} Submitted Successfully!`);
+                                                window.open(loan.link, '_blank', 'noopener,noreferrer');
                                             }
                                         }}
                                     >
-                                        {loan.eligible ? 'Apply Now' : 'Not Eligible'} <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                                        {loan.eligible ? (
+                                            <>
+                                                <ExternalLink className="w-5 h-5 mr-2" />
+                                                Apply on Official Site
+                                            </>
+                                        ) : (
+                                            <>Not Eligible <ChevronRight className="w-5 h-5 ml-2" /></>
+                                        )}
                                     </Button>
+                                    {loan.eligible && loan.link && (
+                                        <p className="text-xs text-center text-gray-400 mt-2">
+                                            Opens <span className="font-medium text-gray-500">{new URL(loan.link).hostname}</span> in a new tab
+                                        </p>
+                                    )}
 
                                     {/* Verification Badge */}
                                     <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">

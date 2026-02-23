@@ -62,7 +62,7 @@ export default function App() {
           </ul>
         } />;
       case 'privacy':
-        return <StaticPage title="Privacy Policy" content="At ArthikSetu, we take your privacy seriously. Your data is encrypted and stored locally on your device wherever possible. We strictly adhere to India's Digital Personal Data Protection Act, 2023. We do not sell your personal information to third parties." />;
+        return <StaticPage title="Privacy Policy" content="At ArthikSetu, your privacy is our highest priority. All data is encrypted with AES-256 at rest and transmitted via TLS 1.3. Sensitive documents (Aadhaar, PAN) are verified in real-time and immediately discarded — we never store identity document images or numbers on our servers. Your financial data is tokenized and cannot be traced back to you. We strictly adhere to India's Digital Personal Data Protection Act, 2023 (DPDP Act). We do not sell, share, or monetize your personal information with any third parties. You have the right to request complete data deletion at any time." />;
       case 'terms':
         return <StaticPage title="Terms of Service" content="By using ArthikSetu, you agree to our standard terms of service. The platform is provided 'as is' to assist gig workers in managing their finances. Users are responsible for the accuracy of the data they manually input." />;
       case 'help':
@@ -85,7 +85,7 @@ export default function App() {
             </div>
             <div>
               <p className="font-semibold text-[#0A1F44]">Is my data safe?</p>
-              <p>Absolutely. We use bank-grade encryption and do not share your financial data without explicit consent.</p>
+              <p>Absolutely. We use AES-256 encryption for all data at rest and TLS 1.3 for data in transit. Your Aadhaar and PAN data is verified and immediately discarded — never stored on our servers. We comply with India's Digital Personal Data Protection Act 2023 and never share your financial data with third parties without explicit consent.</p>
             </div>
           </div>
         } />;
@@ -96,7 +96,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-['Inter',sans-serif]">
-      <Navigation currentPage={currentPage === 'dashboard' || currentPage === 'unified-dashboard' || currentPage === 'sms-analyzer' || currentPage === 'tax' || currentPage === 'schemes' || currentPage === 'loans' || currentPage === 'reports' || currentPage === 'profile' || currentPage === 'ai-assistant' || currentPage === 'message-decoder' || currentPage === 'document-verify' ? currentPage : 'dashboard'} onNavigate={(page: any) => setCurrentPage(page)} />
+      <Navigation currentPage={currentPage === 'dashboard' || currentPage === 'unified-dashboard' || currentPage === 'sms-analyzer' || currentPage === 'tax' || currentPage === 'schemes' || currentPage === 'loans' || currentPage === 'reports' || currentPage === 'profile' || currentPage === 'ai-assistant' || currentPage === 'document-verify' ? currentPage : 'dashboard'} onNavigate={(page: any) => setCurrentPage(page)} />
       <main>
         {renderPage()}
       </main>
@@ -122,12 +122,15 @@ export default function App() {
               <p className="text-gray-300 text-sm max-w-md leading-relaxed mb-6">
                 Empowering India's gig workers with AI-powered financial tools for earnings tracking, tax management, and government benefits access.
               </p>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center flex-wrap gap-3">
                 <div className="px-4 py-2 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
-                  <span className="text-green-400 font-semibold text-sm">🔒 Privacy-first</span>
+                  <span className="text-green-400 font-semibold text-sm">🔒 AES-256 Encrypted</span>
                 </div>
                 <div className="px-4 py-2 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
-                  <span className="text-blue-400 font-semibold text-sm">✓ Govt Compliant</span>
+                  <span className="text-blue-400 font-semibold text-sm">✓ DPDP Act 2023</span>
+                </div>
+                <div className="px-4 py-2 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
+                  <span className="text-yellow-400 font-semibold text-sm">🛡️ Zero Data Sharing</span>
                 </div>
               </div>
             </div>

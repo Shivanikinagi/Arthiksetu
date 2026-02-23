@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Bot, Send, User, Loader2 } from 'lucide-react';
+import { Bot, Send, User, Loader2, Sparkles, MessageSquare, FileText, Calculator, Landmark, CreditCard, Shield, HelpCircle } from 'lucide-react';
+import { API_BASE_URL } from '../config';
 
 interface Message {
     role: 'user' | 'assistant';
@@ -13,7 +14,7 @@ export function AIChatbot() {
     const [messages, setMessages] = useState<Message[]>([
         {
             role: 'assistant',
-            content: 'Hello! I\'m your AI Earnings Assistant. I can help you track income, answer financial questions, and provide tips for gig workers. How can I help you today?'
+            content: '🙏 Namaste! I\'m your **ArthikSetu Assistant** — your complete financial guide.\n\nI can help you with:\n• 📱 Analyze SMS & transactions\n• 🔍 Decode confusing bank messages\n• 🏛️ Government schemes & eligibility\n• 💰 Tax calculation & ITR guidance\n• 🏦 Loan options & eligibility\n• 📊 Income tracking tips\n• 📄 Document verification help\n\nJust ask me anything or paste an SMS to get started!'
         }
     ]);
     const [input, setInput] = useState('');
@@ -38,7 +39,7 @@ export function AIChatbot() {
         setLoading(true);
 
         try {
-            const response = await fetch('http://localhost:8000/api/chat', {
+            const response = await fetch(`${API_BASE_URL}/api/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -67,41 +68,55 @@ export function AIChatbot() {
         }
     };
 
-    const quickQuestions = [
-        'How can I increase my earnings?',
-        'What government schemes am I eligible for?',
-        'How to save money as a gig worker?',
-        'Tips for managing irregular income?'
+    const quickActions = [
+        { icon: <MessageSquare className="w-3.5 h-3.5" />, label: 'Decode a message', prompt: 'Can you decode this message for me: ' },
+        { icon: <Landmark className="w-3.5 h-3.5" />, label: 'Govt schemes for me', prompt: 'What government schemes am I eligible for as a gig worker earning ₹25,000/month?' },
+        { icon: <Calculator className="w-3.5 h-3.5" />, label: 'Calculate my tax', prompt: 'Help me calculate tax on my annual income of ₹3,00,000' },
+        { icon: <CreditCard className="w-3.5 h-3.5" />, label: 'Loan options', prompt: 'What loan options are available for gig workers?' },
+        { icon: <FileText className="w-3.5 h-3.5" />, label: 'Analyze SMS', prompt: 'Analyze this SMS: Dear Customer, Rs.1200 has been credited to your a/c for Zomato order delivery.' },
+        { icon: <Shield className="w-3.5 h-3.5" />, label: 'Verify documents', prompt: 'How do I verify my Aadhaar and PAN card on ArthikSetu?' },
+        { icon: <HelpCircle className="w-3.5 h-3.5" />, label: 'How to use platform', prompt: 'Guide me through all the features of ArthikSetu' },
+        { icon: <Sparkles className="w-3.5 h-3.5" />, label: 'Savings tips', prompt: 'Give me savings tips for irregular gig worker income' },
     ];
 
-    const handleQuickQuestion = (question: string) => {
-        setInput(question);
+    const handleQuickAction = (prompt: string) => {
+        setInput(prompt);
+    };
+
+    // Simple markdown-like formatting for assistant messages
+    const formatMessage = (content: string) => {
+        return content
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\n/g, '<br/>');
     };
 
     return (
         <div className="max-w-4xl mx-auto px-4 py-8">
-            <Card className="h-[600px] flex flex-col bg-white shadow-lg">
+            <Card className="h-[650px] flex flex-col bg-white shadow-xl rounded-2xl overflow-hidden border-0 ring-1 ring-gray-200">
                 {/* Header */}
-                <div className="p-4 border-b bg-gradient-to-r from-[#0A1F44] to-[#1E3A5F] text-white rounded-t-lg">
+                <div className="p-5 border-b bg-gradient-to-r from-[#0A1F44] via-[#152c57] to-[#1E3A5F] text-white">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-white/20 rounded-full">
-                            <Bot className="w-6 h-6" />
+                        <div className="relative">
+                            <div className="p-2.5 bg-white/15 backdrop-blur-sm rounded-xl">
+                                <Bot className="w-6 h-6" />
+                            </div>
+                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-[#0A1F44] animate-pulse"></div>
                         </div>
                         <div>
-                            <h2 className="text-xl font-semibold">AI Earnings Assistant</h2>
-                            <p className="text-sm text-white/80">Ask me anything about your income and finances</p>
+                            <h2 className="text-xl font-bold">ArthikSetu Assistant</h2>
+                            <p className="text-sm text-white/70">Your complete financial guide — SMS, schemes, tax, loans & more</p>
                         </div>
                     </div>
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50">
                     {messages.map((message, index) => (
                         <div
                             key={index}
                             className={`flex gap-3 ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
                         >
-                            <div className={`p-2 rounded-full h-8 w-8 flex items-center justify-center ${
+                            <div className={`p-2 rounded-full h-8 w-8 flex items-center justify-center shrink-0 ${
                                 message.role === 'user' ? 'bg-[#F7931E]' : 'bg-[#0A1F44]'
                             }`}>
                                 {message.role === 'user' ? (
@@ -110,12 +125,15 @@ export function AIChatbot() {
                                     <Bot className="w-4 h-4 text-white" />
                                 )}
                             </div>
-                            <div className={`flex-1 max-w-[80%] p-3 rounded-lg ${
+                            <div className={`flex-1 max-w-[80%] p-3.5 rounded-2xl shadow-sm ${
                                 message.role === 'user'
-                                    ? 'bg-[#F7931E] text-white ml-auto'
-                                    : 'bg-gray-100 text-gray-800'
+                                    ? 'bg-[#F7931E] text-white ml-auto rounded-tr-md'
+                                    : 'bg-white text-gray-800 border border-gray-100 rounded-tl-md'
                             }`}>
-                                <p className="whitespace-pre-wrap">{message.content}</p>
+                                <div 
+                                    className="whitespace-pre-wrap text-sm leading-relaxed"
+                                    dangerouslySetInnerHTML={{ __html: formatMessage(message.content) }}
+                                />
                             </div>
                         </div>
                     ))}
@@ -124,26 +142,30 @@ export function AIChatbot() {
                             <div className="p-2 rounded-full h-8 w-8 flex items-center justify-center bg-[#0A1F44]">
                                 <Bot className="w-4 h-4 text-white" />
                             </div>
-                            <div className="bg-gray-100 p-3 rounded-lg">
-                                <Loader2 className="w-5 h-5 animate-spin text-[#0A1F44]" />
+                            <div className="bg-white p-3.5 rounded-2xl rounded-tl-md shadow-sm border border-gray-100">
+                                <div className="flex items-center gap-2 text-sm text-gray-500">
+                                    <Loader2 className="w-4 h-4 animate-spin text-[#0A1F44]" />
+                                    <span>Thinking...</span>
+                                </div>
                             </div>
                         </div>
                     )}
                     <div ref={messagesEndRef} />
                 </div>
 
-                {/* Quick Questions */}
-                {messages.length === 1 && (
-                    <div className="px-4 pb-2">
-                        <p className="text-xs text-gray-500 mb-2">Quick questions:</p>
+                {/* Quick Actions */}
+                {messages.length <= 2 && (
+                    <div className="px-4 py-3 border-t bg-white/80 backdrop-blur-sm">
+                        <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Quick Actions</p>
                         <div className="flex flex-wrap gap-2">
-                            {quickQuestions.map((q, idx) => (
+                            {quickActions.map((action, idx) => (
                                 <button
                                     key={idx}
-                                    onClick={() => handleQuickQuestion(q)}
-                                    className="text-xs px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-700 transition-colors"
+                                    onClick={() => handleQuickAction(action.prompt)}
+                                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-gray-100 hover:bg-blue-50 hover:text-blue-700 rounded-full text-gray-700 transition-all border border-gray-200 hover:border-blue-200"
                                 >
-                                    {q}
+                                    {action.icon}
+                                    {action.label}
                                 </button>
                             ))}
                         </div>
@@ -151,20 +173,20 @@ export function AIChatbot() {
                 )}
 
                 {/* Input */}
-                <div className="p-4 border-t bg-gray-50">
+                <div className="p-4 border-t bg-white">
                     <div className="flex gap-2">
                         <Input
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyPress={handleKeyPress}
-                            placeholder="Type your message..."
-                            className="flex-1"
+                            placeholder="Ask anything — paste SMS, decode messages, get scheme info..."
+                            className="flex-1 rounded-xl"
                             disabled={loading}
                         />
                         <Button
                             onClick={handleSend}
                             disabled={!input.trim() || loading}
-                            className="bg-[#F7931E] hover:bg-[#E8850D]"
+                            className="bg-[#F7931E] hover:bg-[#E8850D] rounded-xl px-4"
                         >
                             <Send className="w-4 h-4" />
                         </Button>
