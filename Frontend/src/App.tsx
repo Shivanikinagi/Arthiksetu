@@ -11,8 +11,9 @@ import { UnifiedDashboard } from './components/UnifiedDashboard';
 import { SMSAnalyzer } from './components/SMSAnalyzer';
 import { MessageDecoder } from './components/MessageDecoder';
 import { DocumentVerification } from './components/DocumentVerification';
+import { PrivacyDashboard } from './components/PrivacyDashboard';
 
-type PageType = 'dashboard' | 'unified-dashboard' | 'sms-analyzer' | 'tax' | 'schemes' | 'loans' | 'reports' | 'profile' | 'ai-assistant' | 'message-decoder' | 'document-verify' | 'about' | 'how-it-works' | 'privacy' | 'terms' | 'help' | 'contact' | 'faq';
+type PageType = 'dashboard' | 'unified-dashboard' | 'sms-analyzer' | 'tax' | 'schemes' | 'loans' | 'reports' | 'profile' | 'ai-assistant' | 'message-decoder' | 'document-verify' | 'privacy-dashboard' | 'about' | 'how-it-works' | 'privacy' | 'terms' | 'help' | 'contact' | 'faq';
 
 const StaticPage = ({ title, content }: { title: string; content: React.ReactNode }) => (
   <div className="max-w-4xl mx-auto px-4 py-12">
@@ -38,6 +39,8 @@ export default function App() {
         return <MessageDecoder />;
       case 'document-verify':
         return <DocumentVerification />;
+      case 'privacy-dashboard':
+        return <PrivacyDashboard />;
       case 'tax':
         return <TaxPage />;
       case 'schemes':
@@ -96,7 +99,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-['Inter',sans-serif]">
-      <Navigation currentPage={currentPage === 'dashboard' || currentPage === 'unified-dashboard' || currentPage === 'sms-analyzer' || currentPage === 'tax' || currentPage === 'schemes' || currentPage === 'loans' || currentPage === 'reports' || currentPage === 'profile' || currentPage === 'ai-assistant' || currentPage === 'document-verify' ? currentPage : 'dashboard'} onNavigate={(page: any) => setCurrentPage(page)} />
+      <Navigation currentPage={currentPage === 'dashboard' || currentPage === 'unified-dashboard' || currentPage === 'sms-analyzer' || currentPage === 'tax' || currentPage === 'schemes' || currentPage === 'loans' || currentPage === 'reports' || currentPage === 'profile' || currentPage === 'ai-assistant' || currentPage === 'document-verify' || currentPage === 'privacy-dashboard' ? currentPage : 'dashboard'} onNavigate={(page: any) => setCurrentPage(page)} />
       <main>
         {renderPage()}
       </main>

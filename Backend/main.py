@@ -1,7 +1,11 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Query
-from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from typing import List, Optional, Dict
+from dotenv import load_dotenv
+
+# Load .env file if present
+load_dotenv()
+
 from sms_parser import SMSParser
 from schemes import get_eligible_schemes, SCHEMES_DB, simplify_scheme_explanation
 from fastapi.middleware.cors import CORSMiddleware
@@ -194,12 +198,6 @@ async def verify_document(file: UploadFile = File(...), doc_type: str = Form(...
                     "reason": result.get("reason"),
                     "features_found": result.get("document_features_found", [])
                 }
-                # If confidence is low, suggest DigiLocker
-                if confidence_score < 0.8:
-                    resp["suggestion"] = (
-                        "AI confidence is below 80%. For a more reliable result, "
-                        "verify via DigiLocker which checks directly against government records."
-                    )
                 return resp
             else:
                 return {
@@ -816,126 +814,59 @@ async def verify_otp(request: OTPVerifyRequest):
 
 
 # ---------------------------------------------------------------------------
-# DigiLocker OAuth2 Integration
-# Register your app at https://developer.digitallocker.gov.in/ to get credentials
+# Privacy & Data Control Endpoints
 # ---------------------------------------------------------------------------
 
-DIGILOCKER_CLIENT_ID = os.getenv("DIGILOCKER_CLIENT_ID", "DEMO_CLIENT_ID")
-DIGILOCKER_CLIENT_SECRET = os.getenv("DIGILOCKER_CLIENT_SECRET", "DEMO_CLIENT_SECRET")
-DIGILOCKER_REDIRECT_URI = os.getenv("DIGILOCKER_REDIRECT_URI", "http://localhost:8000/api/digilocker/callback")
-FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:3001")
-
-DIGILOCKER_AUTH_URL = "https://api.digitallocker.gov.in/public/oauth2/1/authorize"
-DIGILOCKER_TOKEN_URL = "https://api.digitallocker.gov.in/public/oauth2/1/token"
-DIGILOCKER_ISSUED_FILES_URL = "https://api.digitallocker.gov.in/public/oauth2/1/files/issued"
-
-# Temporary state storage (use Redis in production)
-digilocker_states: Dict[str, dict] = {}
-
-
-@app.get("/api/digilocker/auth-url")
-def get_digilocker_auth_url(doc_type: str = Query(default="aadhaar")):
+@app.delete("/api/delete_all_data")
+async def delete_all_data():
     """
-    Generate the official DigiLocker OAuth2 authorization URL.
-    The user is redirected to https://digitallocker.gov.in to authenticate
-    using their Aadhaar-linked mobile OTP — no document upload required.
+    Nuclear option — delete ALL user data from the system.
+    Clears earnings, chat sessions, OTP states, everything.
     """
-    is_demo = DIGILOCKER_CLIENT_ID == "DEMO_CLIENT_ID"
-    state = secrets.token_urlsafe(32)
-    digilocker_states[state] = {
-        "doc_type": doc_type,
-        "created_at": datetime.now().isoformat()
+    global earnings_store, chat_sessions, otp_store
+    earnings_store = {
+        "income_sources": [],
+        "monthly_earnings": [],
+        "total_monthly_income": 0,
     }
-    # Cleanup expired states (older than 10 minutes)
-    cutoff = (datetime.now() - timedelta(minutes=10)).isoformat()
-    expired = [k for k, v in digilocker_states.items() if v.get("created_at", "") < cutoff]
-    for k in expired:
-        digilocker_states.pop(k, None)
-    params = {
-        "response_type": "code",
-        "client_id": DIGILOCKER_CLIENT_ID,
-        "redirect_uri": DIGILOCKER_REDIRECT_URI,
-        "state": state,
-    }
-    auth_url = DIGILOCKER_AUTH_URL + "?" + urllib.parse.urlencode(params)
+    chat_sessions.clear()
+    otp_store.clear()
     return {
-        "auth_url": auth_url,
-        "state": state,
-        "is_demo": is_demo,
-        "note": "Redirects to official DigiLocker (digitallocker.gov.in). No documents uploaded to ArthikSetu." if is_demo else None,
-        "setup_url": "https://developer.digitallocker.gov.in/" if is_demo else None,
+        "status": "deleted",
+        "message": "All data has been permanently deleted. Earnings, chat history, and sessions have been wiped.",
+        "items_cleared": ["earnings", "chat_history", "otp_sessions"]
     }
 
 
-@app.get("/api/digilocker/callback")
-async def digilocker_callback(code: str = Query(...), state: str = Query(...)):
+@app.get("/api/export_earnings")
+async def export_earnings(format: str = Query(default="json")):
     """
-    Handle the OAuth2 callback from DigiLocker.
-    Exchanges the authorization code for an access token and fetches issued documents.
-    Redirects the user back to the frontend with the verification result.
+    Export all earnings data so the user owns their data.
+    Supports JSON format. Frontend converts to PDF.
     """
-    if state not in digilocker_states:
-        raise HTTPException(status_code=400, detail="Invalid or expired OAuth state. Please try again.")
+    return {
+        "exported_at": datetime.now().isoformat(),
+        "income_sources": earnings_store["income_sources"],
+        "monthly_earnings": earnings_store["monthly_earnings"],
+        "total_monthly_income": earnings_store["total_monthly_income"],
+        "summary": {
+            "total_sources": len(earnings_store["income_sources"]),
+            "total_income": get_total_monthly_income(),
+        }
+    }
 
-    state_data = digilocker_states.pop(state)
-    doc_type = state_data.get("doc_type", "aadhaar")
 
-    is_demo = DIGILOCKER_CLIENT_ID == "DEMO_CLIENT_ID"
-    if is_demo:
-        # In demo mode: simulate a successful verification
-        result_params = urllib.parse.urlencode({
-            "digilocker_status": "verified",
-            "doc_type": doc_type,
-            "source": "DigiLocker",
-            "message": f"{doc_type.upper()} verified via DigiLocker (demo mode)",
-            "confidence": "0.99",
-        })
-        return RedirectResponse(url=f"{FRONTEND_ORIGIN}/document-verify?{result_params}")
-
-    try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            # Exchange code for access token
-            token_resp = await client.post(DIGILOCKER_TOKEN_URL, data={
-                "code": code,
-                "grant_type": "authorization_code",
-                "client_id": DIGILOCKER_CLIENT_ID,
-                "client_secret": DIGILOCKER_CLIENT_SECRET,
-                "redirect_uri": DIGILOCKER_REDIRECT_URI,
-            })
-            token_data = token_resp.json()
-            access_token = token_data.get("access_token")
-
-            if not access_token:
-                error_params = urllib.parse.urlencode({
-                    "digilocker_status": "error",
-                    "message": "Failed to obtain access token from DigiLocker."
-                })
-                return RedirectResponse(url=f"{FRONTEND_ORIGIN}/document-verify?{error_params}")
-
-            # Fetch issued documents (Aadhaar, PAN, Driving Licence, etc.)
-            files_resp = await client.get(
-                DIGILOCKER_ISSUED_FILES_URL,
-                headers={"Authorization": f"Bearer {access_token}"}
-            )
-            files_data = files_resp.json()
-            issued_docs = files_data.get("items", [])
-
-            result_params = urllib.parse.urlencode({
-                "digilocker_status": "verified",
-                "doc_type": doc_type,
-                "source": "DigiLocker",
-                "message": f"{doc_type.upper()} verified via official DigiLocker",
-                "confidence": "0.99",
-                "doc_count": len(issued_docs),
-            })
-            return RedirectResponse(url=f"{FRONTEND_ORIGIN}/document-verify?{result_params}")
-
-    except Exception as e:
-        error_params = urllib.parse.urlencode({
-            "digilocker_status": "error",
-            "message": f"DigiLocker connection failed: {str(e)}"
-        })
-        return RedirectResponse(url=f"{FRONTEND_ORIGIN}/document-verify?{error_params}")
+@app.get("/api/privacy_settings")
+async def get_privacy_settings():
+    """Return current privacy/permission states (stored client-side, this is a reference endpoint)."""
+    return {
+        "note": "Privacy settings are stored locally in your browser. No server-side tracking.",
+        "available_permissions": [
+            {"id": "sms_parsing", "label": "SMS Parsing", "description": "Allow app to parse financial SMS messages"},
+            {"id": "location_access", "label": "Location Access", "description": "Allow location for nearby services"},
+            {"id": "document_upload", "label": "Document Upload", "description": "Allow uploading ID documents for verification"},
+        ]
+    }
 
 
 if __name__ == "__main__":

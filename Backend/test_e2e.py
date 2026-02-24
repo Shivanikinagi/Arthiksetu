@@ -218,43 +218,31 @@ def test_verify_otp_fail():
     _ok("POST /api/verify_otp — wrong code rejected")
 
 
-# ─── 18. DigiLocker auth URL ─────────────────────────────────────────
-def test_digilocker_auth_url():
-    r = requests.get(f"{BASE}/api/digilocker/auth-url", params={"doc_type": "aadhaar"})
+# ─── 18. Privacy: Export earnings ─────────────────────────────────────
+def test_export_earnings():
+    r = requests.get(f"{BASE}/api/export_earnings")
     assert r.status_code == 200
     d = r.json()
-    assert "auth_url" in d
-    assert "state" in d
-    assert "digitallocker.gov.in" in d["auth_url"]
-    _ok("GET /api/digilocker/auth-url")
+    assert "earnings" in d
+    _ok("GET /api/export_earnings")
 
 
-# ─── 19. DigiLocker callback (demo mode) ─────────────────────────────
-def test_digilocker_callback_demo():
-    # Get a valid state first
-    r1 = requests.get(f"{BASE}/api/digilocker/auth-url", params={"doc_type": "pan"})
-    state = r1.json()["state"]
-    # callback — demo mode returns redirect
-    r2 = requests.get(
-        f"{BASE}/api/digilocker/callback",
-        params={"code": "demo_code", "state": state},
-        allow_redirects=False,
-    )
-    assert r2.status_code in (302, 307, 200)
-    if r2.status_code in (302, 307):
-        location = r2.headers.get("location", "")
-        assert "digilocker_status=verified" in location
-    _ok("GET /api/digilocker/callback (demo)")
+# ─── 19. Privacy: Privacy settings ───────────────────────────────────
+def test_privacy_settings():
+    r = requests.get(f"{BASE}/api/privacy_settings")
+    assert r.status_code == 200
+    d = r.json()
+    assert "permissions" in d
+    _ok("GET /api/privacy_settings")
 
 
-# ─── 20. DigiLocker callback — invalid state ─────────────────────────
-def test_digilocker_callback_invalid_state():
-    r = requests.get(
-        f"{BASE}/api/digilocker/callback",
-        params={"code": "x", "state": "invalid_state"},
-    )
-    assert r.status_code in (400, 422)
-    _ok("GET /api/digilocker/callback — invalid state rejected")
+# ─── 20. Privacy: Delete all data ────────────────────────────────────
+def test_delete_all_data():
+    r = requests.delete(f"{BASE}/api/delete_all_data")
+    assert r.status_code == 200
+    d = r.json()
+    assert d["status"] == "deleted"
+    _ok("DELETE /api/delete_all_data")
 
 
 # ─── 21. Add & clear income ──────────────────────────────────────────
@@ -297,9 +285,9 @@ ALL_TESTS = [
     test_send_otp,
     test_verify_otp,
     test_verify_otp_fail,
-    test_digilocker_auth_url,
-    test_digilocker_callback_demo,
-    test_digilocker_callback_invalid_state,
+    test_export_earnings,
+    test_privacy_settings,
+    test_delete_all_data,
     test_add_and_clear_income,
     test_verify_document_no_file,
 ]

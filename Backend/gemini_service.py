@@ -350,8 +350,7 @@ ADDITIONAL CROSS-CHECKS:
 - Verify structural layout matches official {doc_type} format.
 - If document ID is visible, validate the format (e.g., Aadhaar = 12 digits, PAN = 5 letters + 4 digits + 1 letter).
 - Flag any signs of tampering (misaligned text, resolution mismatches, cut/paste artifacts).
-- Assign confidence "high" ONLY if all mandatory features are present and authentic-looking.
-- Documents downloaded from DigiLocker are considered more trustworthy — note if the document appears to be an official digital copy."""
+- Assign confidence "high" ONLY if all mandatory features are present and authentic-looking."""
         
         image_part = {
             "mime_type": mime_type,

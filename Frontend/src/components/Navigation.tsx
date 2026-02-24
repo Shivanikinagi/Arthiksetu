@@ -2,8 +2,8 @@ import { Building2, FileText, Gift, BarChart3, User, Bot, Landmark, MessageSquar
 import { useState } from 'react';
 
 interface NavigationProps {
-  currentPage: 'dashboard' | 'unified-dashboard' | 'sms-analyzer' | 'tax' | 'schemes' | 'loans' | 'reports' | 'profile' | 'ai-assistant' | 'document-verify';
-  onNavigate: (page: 'dashboard' | 'unified-dashboard' | 'sms-analyzer' | 'tax' | 'schemes' | 'loans' | 'reports' | 'profile' | 'ai-assistant' | 'document-verify') => void;
+  currentPage: 'dashboard' | 'unified-dashboard' | 'sms-analyzer' | 'tax' | 'schemes' | 'loans' | 'reports' | 'profile' | 'ai-assistant' | 'document-verify' | 'privacy-dashboard';
+  onNavigate: (page: 'dashboard' | 'unified-dashboard' | 'sms-analyzer' | 'tax' | 'schemes' | 'loans' | 'reports' | 'profile' | 'ai-assistant' | 'document-verify' | 'privacy-dashboard') => void;
 }
 
 export function Navigation({ currentPage, onNavigate }: NavigationProps) {
@@ -19,6 +19,7 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
     { id: 'schemes' as const, label: 'Schemes' },
     { id: 'loans' as const, label: 'Loans' },
     { id: 'reports' as const, label: 'Reports' },
+    { id: 'privacy-dashboard' as const, label: 'Privacy' },
   ];
 
   return (
