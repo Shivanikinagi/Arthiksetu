@@ -342,7 +342,16 @@ Return a strict JSON response (no markdown, no code blocks) with this exact stru
     "confidence": "high/medium/low"
 }}
 
-IMPORTANT: Only mark as valid if the image actually shows a genuine-looking {doc_type}. Reject random images, screenshots, non-document images, or clearly fake documents."""
+IMPORTANT: Only mark as valid if the image actually shows a genuine-looking {doc_type}. Reject random images, screenshots, non-document images, or clearly fake documents.
+
+ADDITIONAL CROSS-CHECKS:
+- If text appears digitally typed over a blank template, mark as suspicious (low confidence).
+- Check for consistent font styles — genuine documents use government-issued typography.
+- Verify structural layout matches official {doc_type} format.
+- If document ID is visible, validate the format (e.g., Aadhaar = 12 digits, PAN = 5 letters + 4 digits + 1 letter).
+- Flag any signs of tampering (misaligned text, resolution mismatches, cut/paste artifacts).
+- Assign confidence "high" ONLY if all mandatory features are present and authentic-looking.
+- Documents downloaded from DigiLocker are considered more trustworthy — note if the document appears to be an official digital copy."""
         
         image_part = {
             "mime_type": mime_type,

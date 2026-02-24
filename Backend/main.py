@@ -184,22 +184,32 @@ async def verify_document(file: UploadFile = File(...), doc_type: str = Form(...
                 confidence = result.get("confidence", "medium")
                 confidence_score = {"high": 0.95, "medium": 0.75, "low": 0.5}.get(confidence, 0.75)
                 
-                return {
+                resp = {
                     "status": "verified",
                     "doc_type": doc_type,
                     "extracted_id": result.get("extracted_id"),
-                    "message": f"{doc_type} verified successfully",
+                    "message": f"{doc_type} verified successfully via AI analysis",
                     "confidence_score": confidence_score,
+                    "verification_source": "ai_upload",
                     "reason": result.get("reason"),
                     "features_found": result.get("document_features_found", [])
                 }
+                # If confidence is low, suggest DigiLocker
+                if confidence_score < 0.8:
+                    resp["suggestion"] = (
+                        "AI confidence is below 80%. For a more reliable result, "
+                        "verify via DigiLocker which checks directly against government records."
+                    )
+                return resp
             else:
                 return {
                     "status": "rejected",
                     "doc_type": doc_type,
                     "message": f"{doc_type} verification failed",
                     "confidence_score": 0.2,
-                    "reason": result.get("reason", "Document does not appear to be a valid " + doc_type)
+                    "verification_source": "ai_upload",
+                    "reason": result.get("reason", "Document does not appear to be a valid " + doc_type),
+                    "suggestion": "Try verifying via DigiLocker for a government-backed result."
                 }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -831,11 +841,16 @@ def get_digilocker_auth_url(doc_type: str = Query(default="aadhaar")):
     using their Aadhaar-linked mobile OTP — no document upload required.
     """
     is_demo = DIGILOCKER_CLIENT_ID == "DEMO_CLIENT_ID"
-    state = secrets.token_urlsafe(16)
+    state = secrets.token_urlsafe(32)
     digilocker_states[state] = {
         "doc_type": doc_type,
         "created_at": datetime.now().isoformat()
     }
+    # Cleanup expired states (older than 10 minutes)
+    cutoff = (datetime.now() - timedelta(minutes=10)).isoformat()
+    expired = [k for k, v in digilocker_states.items() if v.get("created_at", "") < cutoff]
+    for k in expired:
+        digilocker_states.pop(k, None)
     params = {
         "response_type": "code",
         "client_id": DIGILOCKER_CLIENT_ID,
