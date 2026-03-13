@@ -148,6 +148,7 @@ darkagent/
 │   ├── simulation.js          — Simulation engine SDK
 │   ├── darkagent.js           — Core SDK (3-line integration)
 │   ├── bitgo.js               — BitGo stealth + policy adapter
+│   ├── fileverse.js           — Fileverse document storage
 │   ├── permit2.js             — Uniswap Permit2 gasless approvals
 │   └── mev-protection.js      — Flashbots MEV protection
 ├── frontend/
@@ -160,8 +161,12 @@ darkagent/
 ├── test/
 │   └── DarkAgent.test.js      — Full E2E tests (14 test cases)
 ├── scripts/
-│   └── deploy.js              — Deploys all 4 contracts
-└── tee/                        — Trusted Execution Environment
+│   ├── deploy.js              — Deploys all 4 contracts
+│   ├── deploy-local.js        — Local Hardhat node deployment
+│   ├── create-bitgo-wallet.js — BitGo wallet setup
+│   └── ens-*.js               — ENS record management scripts
+└── docs/
+    └── ENSIP-Agent-Permissions.md — ENSIP-XX specification
 ```
 
 ---
