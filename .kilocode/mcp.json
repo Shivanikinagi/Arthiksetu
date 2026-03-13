@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "heyelsa": {
+      "url": "https://docs.heyelsa.ai/~gitbook/mcp",
+      "headers": {
+        "Authorization": "Bearer your-token"
+      },
+      "alwaysAllow": ["tool3"],
+      "disabled": false
+    }
+  }
+}

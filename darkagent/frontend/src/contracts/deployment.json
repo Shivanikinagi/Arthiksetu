@@ -1,0 +1,16 @@
+{
+  "network": "base_sepolia",
+  "chainId": 84532,
+  "deployer": "0x6B845996450ecf86cC2CBc4b92C69d37F87f42d4",
+  "contracts": {
+    "Permissions": "0x4d60837C634a8ADe2146e44c3a7c37C6B6C41B6f",
+    "DarkAgent": "0xAa9ce47E35515Ad87dB8B35283Cad6AFF62de381"
+  },
+  "agents": {
+    "demoAgent": {
+      "address": "0x6B845996450ecf86cC2CBc4b92C69d37F87f42d4",
+      "ensName": "voting-agent.eth"
+    }
+  },
+  "deployedAt": "2026-03-13T09:28:31.842Z"
+}
