@@ -130,3 +130,7 @@ Desktop.ini
 $RECYCLE.BIN/
 .AppleDouble
 .LSOverride
+
+
+#Ignore vscode AI rules
+.github\instructions\codacy.instructions.md

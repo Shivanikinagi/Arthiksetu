@@ -3,68 +3,69 @@ const fs = require("fs");
 const path = require("path");
 
 async function main() {
-    console.log("===============================================================");
-    console.log("     DarkAgent — Full Protocol Deployment to Base Sepolia");
-    console.log("===============================================================\n");
+    console.log("═══════════════════════════════════════════════════════════");
+    console.log("     🔒 DarkAgent — Deploying to Base Sepolia");
+    console.log("═══════════════════════════════════════════════════════════\n");
 
     const [deployer] = await ethers.getSigners();
-    console.log("Deployer:", deployer.address);
+    console.log("📍 Deployer:", deployer.address);
 
     const balance = await ethers.provider.getBalance(deployer.address);
-    console.log("Balance:", ethers.formatEther(balance), "ETH\n");
+    console.log("💰 Balance:", ethers.formatEther(balance), "ETH\n");
 
-    // 1. Deploy ENS Agent Resolver (ENSIP-XX standard)
-    console.log("--- [1/4] Deploying ENS Agent Resolver (ENSIP-XX) ---");
-    const Resolver = await ethers.getContractFactory("ENSAgentResolver");
-    const resolver = await Resolver.deploy();
-    await resolver.waitForDeployment();
-    const resolverAddress = await resolver.getAddress();
-    console.log("ENSAgentResolver deployed at:", resolverAddress);
+    // Deploy ENS Agent Resolver
+    console.log("━━━ Deploying ENS Agent Resolver ━━━");
+    const ENSResolver = await ethers.getContractFactory("ENSAgentResolver");
+    const ensResolver = await ENSResolver.deploy();
+    await ensResolver.waitForDeployment();
+    const ensAddress = await ensResolver.getAddress();
+    console.log("✅ ENSAgentResolver deployed at:", ensAddress);
 
-    // 2. Deploy Agent Registry (ENS Subdomains as Agent Licenses)
-    console.log("\n--- [2/4] Deploying Agent Registry (Subdomain Licenses) ---");
-    const Registry = await ethers.getContractFactory("AgentRegistry");
-    const registry = await Registry.deploy();
-    await registry.waitForDeployment();
-    const registryAddress = await registry.getAddress();
-    console.log("AgentRegistry deployed at:", registryAddress);
-
-    // 3. Deploy Simulation Engine (DeFi Transaction Simulation)
-    console.log("\n--- [3/4] Deploying Simulation Engine (DeFi Risk Analysis) ---");
-    const SimEngine = await ethers.getContractFactory("SimulationEngine");
-    const simEngine = await SimEngine.deploy();
-    await simEngine.waitForDeployment();
-    const simEngineAddress = await simEngine.getAddress();
-    console.log("SimulationEngine deployed at:", simEngineAddress);
-
-    // 4. Deploy DarkAgent Core Protocol (integrates all three)
-    console.log("\n--- [4/4] Deploying DarkAgent Core Protocol ---");
+    // Deploy DarkAgent Protocol
+    console.log("━━━ Deploying DarkAgent Core Protocol ━━━");
     const DarkAgent = await ethers.getContractFactory("DarkAgent");
-    const darkAgent = await DarkAgent.deploy(resolverAddress, registryAddress, simEngineAddress);
+    const darkAgent = await DarkAgent.deploy(ensAddress);
     await darkAgent.waitForDeployment();
     const darkAgentAddress = await darkAgent.getAddress();
-    console.log("DarkAgent Protocol deployed at:", darkAgentAddress);
+    console.log("✅ DarkAgent deployed at:", darkAgentAddress);
+
+    // Deploy CoinbaseSmartWalletAgent
+    console.log("━━━ Deploying CoinbaseSmartWalletAgent ━━━");
+    // Mock Coinbase Smart Wallet Factory for testing
+    const MockFactory = await ethers.getContractFactory("contracts/interfaces/ICoinbaseSmartWallet.sol:ICoinbaseSmartWalletFactory").catch(() => null);
+    
+    // We can use a mock address or deploy a mock if needed.
+    // For testnet, usually we point to the real factory.
+    // Using a placeholder factory address (real one on base sepolia: 0x0BA5ED0c6AA8c49038F819E587E2633c4A9F428a)
+    const CB_FACTORY = "0x0BA5ED0c6AA8c49038F819E587E2633c4A9F428a"; 
+
+    const CBAgent = await ethers.getContractFactory("CoinbaseSmartWalletAgent");
+    const cbAgent = await CBAgent.deploy(darkAgentAddress, CB_FACTORY);
+    await cbAgent.waitForDeployment();
+    const cbAgentAddress = await cbAgent.getAddress();
+    console.log("✅ CoinbaseSmartWalletAgent deployed at:", cbAgentAddress);
 
     // Save deployment info for frontend
     const deployment = {
-        network: "base-sepolia",
+        network: "base_sepolia",
         chainId: 84532,
         deployer: deployer.address,
         contracts: {
-            Permissions: resolverAddress,
-            AgentRegistry: registryAddress,
-            SimulationEngine: simEngineAddress,
-            DarkAgent: darkAgentAddress
+            DarkAgent: darkAgentAddress,
+            ENSAgentResolver: ensAddress,
+            CoinbaseSmartWalletAgent: cbAgentAddress,
+            CoinbaseSmartWalletFactory: CB_FACTORY
         },
         agents: {
             demoAgent: {
-                address: "0x1111111111111111111111111111111111111111",
+                address: deployer.address,
                 ensName: "voting-agent.eth"
             }
         },
-        deployedAt: new Date().toISOString()
+        deployedAt: new Date().toISOString(),
     };
 
+    // Write to frontend config
     const configPath = path.join(__dirname, "..", "frontend", "src", "contracts");
     if (!fs.existsSync(configPath)) {
         fs.mkdirSync(configPath, { recursive: true });
@@ -73,21 +74,14 @@ async function main() {
         path.join(configPath, "deployment.json"),
         JSON.stringify(deployment, null, 2)
     );
-    console.log("\nDeployment info saved to frontend/src/contracts/deployment.json\n");
-
-    console.log("===============================================================");
-    console.log("  DEPLOYMENT COMPLETE");
-    console.log("===============================================================");
-    console.log(`  ENSAgentResolver:   ${resolverAddress}`);
-    console.log(`  AgentRegistry:      ${registryAddress}`);
-    console.log(`  SimulationEngine:   ${simEngineAddress}`);
-    console.log(`  DarkAgent Protocol: ${darkAgentAddress}`);
-    console.log("===============================================================\n");
+    console.log("\n✅ Deployment info saved to frontend/src/contracts/deployment.json\n");
+    console.log("📝 Add this to your .env:");
+    console.log(`   DARKAGENT_PROTOCOL_ADDRESS=${darkAgentAddress}`);
 }
 
 main()
     .then(() => process.exit(0))
     .catch((error) => {
-        console.error("Deployment failed:", error);
+        console.error("❌ Deployment failed:", error);
         process.exit(1);
     });

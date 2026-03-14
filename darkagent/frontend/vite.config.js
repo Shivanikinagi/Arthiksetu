@@ -1,7 +1,27 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-})
+  resolve: {
+    alias: {
+      process: 'process/browser',
+    },
+  },
+  define: {
+    'process.env': {},
+    global: 'globalThis',
+  },
+  optimizeDeps: {
+    include: ['wagmi', 'viem', '@tanstack/react-query'],
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          web3: ['wagmi', 'viem', '@tanstack/react-query'],
+        },
+      },
+    },
+  },
+});

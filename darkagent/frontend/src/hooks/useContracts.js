@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { ethers } from 'ethers'
-import { DARKAGENT_PROTOCOL_ABI, PERMISSIONS_ABI, AGENT_REGISTRY_ABI, SIMULATION_ENGINE_ABI } from '../contracts/abis'
+import { DARKAGENT_PROTOCOL_ABI, PERMISSIONS_ABI } from '../contracts/abis'
 
 let deploymentConfig = null
 async function loadDeploymentConfig() {
@@ -17,16 +17,36 @@ async function loadDeploymentConfig() {
 const BASE_SEPOLIA_CHAIN_ID = 84532
 const BASE_SEPOLIA_RPC = 'https://sepolia.base.org'
 
-async function switchToBaseSepolia() {
-    if (!window.ethereum) return
+function getUsableAddress(address) {
+    if (!address || !ethers.isAddress(address)) return null
+    if (address === ethers.ZeroAddress) return null
+    return address
+}
+
+function getInjectedProvider() {
+    if (typeof window === 'undefined') return null
+    const eth = window.ethereum
+    if (!eth) return null
+
+    if (Array.isArray(eth.providers) && eth.providers.length > 0) {
+        const metamaskProvider = eth.providers.find((p) => p?.isMetaMask)
+        return metamaskProvider || eth.providers[0]
+    }
+
+    return eth
+}
+
+async function switchToBaseSepolia(injectedProvider) {
+    const provider = injectedProvider || getInjectedProvider()
+    if (!provider) return
     try {
-        await window.ethereum.request({
+        await provider.request({
             method: 'wallet_switchEthereumChain',
             params: [{ chainId: '0x' + BASE_SEPOLIA_CHAIN_ID.toString(16) }],
         })
     } catch (switchError) {
         if (switchError.code === 4902) {
-            await window.ethereum.request({
+            await provider.request({
                 method: 'wallet_addEthereumChain',
                 params: [{
                     chainId: '0x' + BASE_SEPOLIA_CHAIN_ID.toString(16),
@@ -50,25 +70,11 @@ export function useContracts() {
     const [error, setError] = useState(null)
     const [isLive, setIsLive] = useState(false)
 
-    const connectMetaMask = useCallback(async () => {
-        if (!window.ethereum) {
-            setError("MetaMask is not installed.")
-            return
-        }
+    const setupProvider = useCallback(async (injectedProvider = null) => {
+        const selectedProvider = injectedProvider || getInjectedProvider()
+        if (!selectedProvider) return
         try {
-            await window.ethereum.request({ method: 'eth_requestAccounts' })
-            await switchToBaseSepolia()
-            setupProvider()
-        } catch (err) {
-            console.error(err)
-            setError(err.message)
-        }
-    }, [])
-
-    const setupProvider = useCallback(async () => {
-        if (!window.ethereum) return
-        try {
-            const browserProvider = new ethers.BrowserProvider(window.ethereum)
+            const browserProvider = new ethers.BrowserProvider(selectedProvider)
             const network = await browserProvider.getNetwork()
             const accs = await browserProvider.listAccounts()
 
@@ -82,59 +88,78 @@ export function useContracts() {
                 setConnected(true)
 
                 const config = await loadDeploymentConfig()
-                if (config && config.contracts?.DarkAgent) {
+                const darkAgentAddress = getUsableAddress(config?.contracts?.DarkAgent)
+                const permissionsAddress = getUsableAddress(config?.contracts?.Permissions)
+
+                if (darkAgentAddress) {
                     const darkAgent = new ethers.Contract(
-                        config.contracts.DarkAgent,
+                        darkAgentAddress,
                         DARKAGENT_PROTOCOL_ABI,
                         s
                     )
-                    
-                    const permissionsContract = new ethers.Contract(
-                        config.contracts.Permissions,
-                        PERMISSIONS_ABI,
-                        s
-                    )
 
-                    // New contracts
-                    let agentRegistry = null
-                    if (config.contracts.AgentRegistry) {
-                        agentRegistry = new ethers.Contract(
-                            config.contracts.AgentRegistry,
-                            AGENT_REGISTRY_ABI,
+                    const permissionsContract = permissionsAddress
+                        ? new ethers.Contract(
+                            permissionsAddress,
+                            PERMISSIONS_ABI,
                             s
                         )
-                    }
-
-                    let simulationEngine = null
-                    if (config.contracts.SimulationEngine) {
-                        simulationEngine = new ethers.Contract(
-                            config.contracts.SimulationEngine,
-                            SIMULATION_ENGINE_ABI,
-                            s
-                        )
-                    }
+                        : null
                     
-                    setContracts({ darkAgent, permissionsContract, agentRegistry, simulationEngine })
+                    setContracts({ darkAgent, permissionsContract })
                     setIsLive(true)
+                    setError(
+                        permissionsAddress
+                            ? null
+                            : 'Permissions contract is not deployed in deployment.json; permissions features are disabled.'
+                    )
+                } else {
+                    setContracts(null)
+                    setIsLive(false)
+                    setError('DarkAgent contract is missing or invalid in deployment.json.')
                 }
             } else {
                 setConnected(false)
                 setIsLive(false)
+                setContracts(null)
             }
         } catch (err) {
             console.error("Setup error:", err)
+            setError(err.message)
         }
     }, [])
 
+    const connectMetaMask = useCallback(async () => {
+        const selectedProvider = getInjectedProvider()
+        if (!selectedProvider) {
+            setError('No injected wallet found. Please install MetaMask.')
+            return
+        }
+        try {
+            await selectedProvider.request({ method: 'eth_requestAccounts' })
+            await switchToBaseSepolia(selectedProvider)
+            await setupProvider(selectedProvider)
+        } catch (err) {
+            console.error(err)
+            if (err?.message?.includes('already pending')) {
+                setError('Connection request already pending. Please open MetaMask.')
+            } else {
+                setError(err.message)
+            }
+        }
+    }, [setupProvider])
+
     useEffect(() => {
         setupProvider()
-        
-        if (window.ethereum) {
-            window.ethereum.on('accountsChanged', setupProvider)
-            window.ethereum.on('chainChanged', setupProvider)
+
+        const selectedProvider = getInjectedProvider()
+        if (selectedProvider) {
+            const syncProviderState = () => setupProvider(selectedProvider)
+            selectedProvider.on('accountsChanged', syncProviderState)
+            selectedProvider.on('chainChanged', syncProviderState)
             return () => {
-                window.ethereum.removeListener('accountsChanged', setupProvider)
-                window.ethereum.removeListener('chainChanged', setupProvider)
+                selectedProvider.removeListener('accountsChanged', syncProviderState)
+                selectedProvider.removeListener('chainChanged', syncProviderState)
             }
         }
     }, [setupProvider])

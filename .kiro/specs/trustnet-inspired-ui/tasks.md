@@ -1,0 +1,255 @@
+# Implementation Plan: TrustNet-Inspired UI/UX for DarkAgent
+
+## Overview
+
+Rebuild DarkAgent's frontend into an enterprise-grade analytics and control interface. The implementation follows a strict dependency order: dependencies first, then hooks, then base components, then composite components, then page rebuilds, then modifications to existing files, and finally tests.
+
+## Tasks
+
+- [x] 1. Install dependencies
+  - Add to `darkagent/frontend/package.json`: `recharts`, `@radix-ui/react-dialog`, `@radix-ui/react-tooltip`, `@radix-ui/react-tabs`, `fast-check` (dev), `@testing-library/react` (dev), `@testing-library/jest-dom` (dev), `vitest` (dev), `jsdom` (dev)
+  - Add `test` script to `package.json`: `"test": "vitest --run"` and `"test:watch": "vitest"`
+  - Add `vitest.config.js` at `darkagent/frontend/vitest.config.js` with jsdom environment and `@testing-library/jest-dom` setup
+  - _Requirements: 2.1, 15.2_
+
+- [x] 2. Create utility functions
+  - [x] 2.1 Create `src/utils/errors.js` with `classifyContractError(err)` function mapping known error codes/messages to user-friendly objects `{ message, action }`
+    - Handle: `INSUFFICIENT_FUNDS`, `unauthorized`, `frozen`, `NETWORK_ERROR`, fallback to raw message
+    - _Requirements: 17.2, 17.3_
+  - [x] 2.2 Create `src/utils/retry.js` with `withRetry(fn, maxRetries=3, baseDelayMs=500)` implementing exponential backoff (500ms → 1000ms → 2000ms)
+    - _Requirements: 17.7_
+  - [x] 2.3 Create `src/utils/format.js` with helpers: `truncateAddress(addr)`, `formatRelativeTime(unixTs)`, `formatEth(bigint)`, `formatPercent(n)`
+    - _Requirements: 3.1, 4.4_
+
+- [x] 3. Create hooks
+  - [x] 3.1 Create `src/hooks/useToast.js`
+    - Implement `ToastContext`, `ToastProvider` component, and `useToast()` hook
+    - State: array of `ToastItem` objects `{ id, type, message, txHash?, duration? }`
+    - Expose: `toast.success(msg, opts?)`, `toast.error(msg, opts?)`, `toast.pending(msg, opts?)`, `toast.info(msg, opts?)`, `toast.dismiss(id)`
+    - Auto-dismiss after `duration` ms (default 5000); cap visible toasts at 5
+    - _Requirements: 17.1_
+  - [x] 3.2 Create `src/hooks/useMockData.js`
+    - Export `useMockData()` returning: `mockAgents` (array of `AgentRecord`), `mockENSRecords`, `mockBitGoPolicy`, `mockDailyVolume` (7-day array), `mockActivityFeed` (20 items)
+    - Mock agents include one active, one frozen, one expired — each with ENS records
+    - _Requirements: 3.1, 4.1, 7.1, 8.1_
+  - [x] 3.3 Create `src/hooks/useDashboardData.js`
+    - Accept `{ contracts, connected }` from `useContracts()`
+    - Query `ActionProposed`, `ActionVerified`, `ActionExecuted` events via `queryFilter(-10000)`
+    - Compute `DashboardStats`: `totalTransactions`, `transactionsDelta`, `activeAgents`, `avgVerificationTimeMs`, `successRate`, `errorCount`, `dailyVolume`
+    - Fall back to `useMockData()` when not connected or no events found
+    - Refresh on new contract events (listeners); expose `loading`, `error`, `stats`, `activityFeed`
+    - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.7, 3.8, 9.1, 9.2_
+
+- [x] 4. Create base components
+  - [x] 4.1 Create `src/components/Toast.jsx`
+    - Render fixed stack (bottom-right, z-index 9999) of up to 5 toasts from `useToast()` context
+    - Each toast: type icon, message, optional tx hash link (Basescan), close button, auto-dismiss progress bar
+    - Animate in with `fadeIn` (300ms), animate out with fade-out on dismiss
+    - _Requirements: 17.1, 13.1_
+  - [x] 4.2 Create `src/components/Sparkline.jsx`
+    - Props: `{ data: number[], color?: string, height?: number }`
+    - Use `recharts` `LineChart` with no axes, no grid, no tooltip — pure sparkline
+    - Default color: `var(--brand-magenta)`, default height: 40px
+    - _Requirements: 3.4, 18.4_
+  - [x] 4.3 Create `src/components/ActivityFeedItem.jsx`
+    - Props: `{ type, agentAddress, proposalId, status, timestamp, txHash? }`
+    - Render: type icon (proposal=⚡, verification=🔍, execution=✅, freeze=🛑), truncated agent address (monospace), status badge, relative timestamp, optional Basescan link
+    - _Requirements: 9.5, 9.6_
+  - [x] 4.4 Create `src/components/VerificationStep.jsx`
+    - Props: `{ id, label, icon, status, timeMs?, error?, tooltip }`
+    - Render step circle with icon; status drives color: pending=muted, active=magenta glow pulse, complete=emerald, error=red
+    - Show `timeMs` when status is `complete` or `error`; show `error` message when status is `error`
+    - Wrap with `@radix-ui/react-tooltip` showing `tooltip` text on hover
+    - _Requirements: 6.2, 6.3, 6.4, 6.5_
+
+- [x] 5. Create composite components
+  - [x] 5.1 Create `src/components/ActivityFeed.jsx`
+    - Props: `{ items: ActivityItem[], maxItems?: number (default 100) }`
+    - Sort items by `timestamp` descending before render
+    - Cap at `maxItems`; render each as `<ActivityFeedItem />`
+    - Scrollable container with max-height; show empty state when no items
+    - _Requirements: 9.5, 9.8, 15.8_
+  - [x] 5.2 Create `src/components/VerificationFlow.jsx`
+    - Props: `{ steps: VerificationStepState[], animated?: boolean }`
+    - Render steps in fixed order: ENS Lookup → DarkAgent Verify → Smart Wallet → Base Execution
+    - Horizontal layout on desktop (flex row with connector lines), vertical on mobile
+    - When `animated=true`, advance step status with 300ms delays using `setTimeout`
+    - _Requirements: 6.1, 6.2, 6.7, 6.8, 12.2_
+  - [x] 5.3 Create `src/components/IntegrationCard.jsx`
+    - Props: `{ name, logo, status, metric: { label, value }, description, learnMoreUrl? }`
+    - Render as `glass-card` with colored status dot (green=connected, red=disconnected, amber=pending), metric display, description, optional "Learn More" link
+    - _Requirements: 16.1, 16.2, 16.3, 16.4_
+  - [x] 5.4 Create `src/components/AgentCard.jsx`
+    - Props: `{ address, status, spendLimit, dailyLimit, dailySpent, expiresAt, capabilities, ensRecords? }`
+    - Render: monospace truncated address, status badge (active/frozen/expired), daily allowance progress bar (`dailySpent/dailyLimit * 100` clamped 0–100), capability tags
+    - When `status === 'frozen'`: apply `agent-card frozen` class for pulsing red border
+    - When `ensRecords?.isSet`: render collapsible ENS section showing `max_spend`, `slippage`, `protocols`
+    - _Requirements: 4.1, 4.4, 4.5, 4.7, 4.8_
+  - [x] 5.5 Create `src/components/ENSPermissionPanel.jsx`
+    - Props: `{ ensName?, records: ENSPermissionRecord, agentAddress: string }`
+    - Show ENS name if available; display `max_spend` (ETH), `slippage` (%), `protocols` as clickable badges
+    - Show "last updated" timestamp; "Edit ENS Records" button linking to `https://app.ens.domains`
+    - When `records.isSet === false`: render warning card with setup instructions
+    - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8_
+
+- [-] 6. Rebuild Dashboard page
+  - [ ] 6.1 Rebuild `src/pages/Dashboard.jsx` as enterprise analytics dashboard
+    - Import and use `useDashboardData()`, `useToast()`, `ActivityFeed`, `Sparkline`, `IntegrationCard`
+    - Top section: 4 stat cards (Total Transactions with delta %, Active Agents, Avg Verification Time, Success Rate) using existing `.stat-card` CSS classes
+    - Middle section: 7-day volume line chart (recharts `LineChart` with axes) + `Sparkline` for each stat
+    - Filter bar: filter activity feed by agent address (text input, debounced 300ms), action type (select), date range (two date inputs)
+    - Bottom section: `<ActivityFeed />` with filtered items
+    - Integration status row: 4 `<IntegrationCard />` components (Coinbase Smart Wallet, ENS, BitGo, Base)
+    - Show demo mode banner when not connected to contracts
+    - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 15.5, 16.1, 16.2, 16.3_
+  - [ ] 6.2 Checkpoint — ensure Dashboard renders without errors in both connected and demo modes
+    - Ensure all tests pass, ask the user if questions arise.
+
+- [ ] 7. Rebuild Proposer page
+  - [ ] 7.1 Rebuild `src/pages/Proposer.jsx` as execution simulator with verification flow
+    - Import and use `useContracts()`, `useToast()`, `VerificationFlow`, `useMockData`
+    - Template selector: 3 preset action cards (Token Transfer, Uniswap Swap, Aave Deposit) that pre-fill form fields
+    - Form fields: target address (with EVM address validation), value (ETH), calldata (hex)
+    - Pre-submission check panel: show ENS compliance, spending limit, protocol whitelist checks as pass/fail rows
+    - `<VerificationFlow />` component below form, initially all steps pending; animate through steps on submit
+    - Two buttons: "Simulate" (run checks without executing) and "Submit Proposal" (on-chain)
+    - On success: show tx hash with Basescan link via `toast.success()`; on failure: `toast.error()` with classified message
+    - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 10.8, 6.1, 6.2, 6.3, 6.4_
+
+- [ ] 8. Modify SmartWallet page
+  - [ ] 8.1 Add `@radix-ui/react-tabs` tab structure to `src/pages/SmartWallet.jsx`
+    - Three tabs: "Wallet Overview", "Agent Management", "Security"
+    - Wallet Overview tab: existing wallet connection UI + balance display + registration status
+    - _Requirements: 5.1, 5.2, 5.3_
+  - [ ] 8.2 Add Agent Management tab content to `src/pages/SmartWallet.jsx`
+    - List of `<AgentCard />` components from `useMockData().mockAgents` (or on-chain when available)
+    - "Authorize New Agent" form: agent address, per-transaction limit, daily limit, duration — validate that `perTxLimit <= dailyLimit` before enabling submit
+    - Revoke button on each agent card
+    - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6_
+  - [ ] 8.3 Add Security tab content to `src/pages/SmartWallet.jsx`
+    - Circuit breaker panel using existing `.cb-panel` and `.kill-btn` CSS classes
+    - Freeze button triggers `@radix-ui/react-dialog` confirmation modal before executing
+    - When frozen: replace with UNFREEZE button; show pulsing red banner; show blocked attempts count
+    - `<ENSPermissionPanel />` below circuit breaker showing mock ENS records
+    - BitGo policy panel: velocity limit, address whitelist, sync status badge, last sync time, "Sync Now" button, privacy address count
+    - _Requirements: 5.4, 5.5, 5.6, 5.7, 5.8, 7.1, 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8, 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8_
+
+- [ ] 9. Modify App.jsx
+  - [ ] 9.1 Wrap app with `ToastProvider` and render `<Toast />` in `src/App.jsx`
+    - Import `ToastProvider` from `./hooks/useToast` and `Toast` from `./components/Toast`
+    - Wrap the return JSX with `<ToastProvider>`, render `<Toast />` inside it (outside page shell)
+    - _Requirements: 17.1_
+  - [ ] 9.2 Add `NetworkStatus` indicator to navbar in `src/App.jsx`
+    - Small colored dot in navbar: green (Base Sepolia chainId 84532), amber (wrong network), red (disconnected)
+    - Wrong network triggers `wallet_switchEthereumChain` prompt via `window.ethereum`
+    - _Requirements: 17.8_
+  - [ ] 9.3 Add theme toggle to navbar in `src/App.jsx`
+    - Button cycling dark → light → dark; persist to `localStorage` under key `darkagent-theme`
+    - On mount, read `localStorage` and apply theme class to `<html>` element before first render
+    - Transition colors over 200ms via CSS `transition: background-color 0.2s, color 0.2s` on `:root`
+    - _Requirements: 19.1, 19.2, 19.3_
+
+- [ ] 10. Write unit tests
+  - [ ] 10.1 Create `src/__tests__/unit/Toast.test.jsx`
+    - Test: toast renders with correct type icon and message
+    - Test: toast auto-dismisses after duration
+    - Test: max 5 toasts visible; 6th replaces oldest
+    - _Requirements: 17.1_
+  - [ ] 10.2 Create `src/__tests__/unit/VerificationFlow.test.jsx`
+    - Test: renders all 4 steps in correct order regardless of status values
+    - Test: active step has glow class; complete step shows timeMs; error step shows error message
+    - _Requirements: 6.1, 6.3, 6.4_
+  - [ ] 10.3 Create `src/__tests__/unit/ActivityFeed.test.jsx`
+    - Test: items render sorted by timestamp descending
+    - Test: feed capped at 100 items when given 150
+    - Test: empty state renders when items array is empty
+    - _Requirements: 9.5, 9.8_
+  - [ ] 10.4 Create `src/__tests__/unit/AgentCard.test.jsx`
+    - Test: frozen agent has frozen class and FROZEN badge
+    - Test: progress bar width matches `dailySpent/dailyLimit * 100`
+    - Test: ENS section renders when `ensRecords.isSet === true`
+    - _Requirements: 4.4, 4.7, 4.8_
+  - [ ] 10.5 Create `src/__tests__/unit/useDashboardData.test.js`
+    - Test: returns mock data when not connected
+    - Test: computes `successRate` correctly from mocked event arrays
+    - Test: `activityFeed` is sorted descending by timestamp
+    - _Requirements: 3.1, 3.7_
+
+- [ ] 11. Write property-based tests
+  - [ ] 11.1 Create `src/__tests__/property/dashboardStats.property.test.js`
+    - [ ] 11.1.1 Property 1: Dashboard stats computation correctness
+      - Generate random arrays of proposed/verified/executed events; assert `totalTransactions === executedCount`, `successRate === executedCount/proposedCount*100`, `errorCount === rejectedCount`
+      - **Property 1: Dashboard stats computation correctness**
+      - **Validates: Requirements 3.1, 3.7**
+    - [ ] 11.1.2 Property 2: Active agent count derivation
+      - Generate random authorize/revoke event sets with random `expiresAt` timestamps; assert `activeAgents` equals agents authorized but not revoked with future expiry
+      - **Property 2: Active agent count derivation**
+      - **Validates: Requirements 3.2**
+    - [ ] 11.1.3 Property 3: Average verification time computation
+      - Generate non-empty arrays of positive integers; assert displayed average equals `Math.round(sum/count)`
+      - **Property 3: Average verification time computation**
+      - **Validates: Requirements 3.3**
+    - [ ] 11.1.4 Property 4: Daily volume aggregation
+      - Generate arrays of timestamped events; assert sum of all bucket counts equals total event count and each event belongs to exactly one bucket
+      - **Property 4: Daily volume aggregation**
+      - **Validates: Requirements 3.4, 18.1, 18.4**
+    - [ ] 11.1.5 Property 5: Activity feed ordering and size cap
+      - Generate arrays of 0–200 activity items; assert feed is sorted descending by timestamp and length ≤ 100
+      - **Property 5: Activity feed ordering and size cap**
+      - **Validates: Requirements 3.5, 9.5, 9.8, 15.8**
+    - [ ] 11.1.6 Property 6: Filter correctness
+      - Generate activity arrays and random filter criteria; assert every item in filtered result satisfies predicate and no satisfying item is absent
+      - **Property 6: Filter correctness**
+      - **Validates: Requirements 3.6**
+  - [ ] 11.2 Create `src/__tests__/property/agentManagement.property.test.js`
+    - [ ] 11.2.1 Property 7: Agent authorization validation
+      - Generate pairs where `perTxLimit > dailyLimit`; assert submission is blocked (returns error, does not call contract)
+      - **Property 7: Agent authorization validation**
+      - **Validates: Requirements 4.3**
+    - [ ] 11.2.2 Property 8: Daily allowance progress calculation
+      - Generate `dailyLimit > 0` and `dailySpent` in range [0, dailyLimit*2]; assert progress = `clamp(dailySpent/dailyLimit*100, 0, 100)`
+      - **Property 8: Daily allowance progress calculation**
+      - **Validates: Requirements 4.4**
+    - [ ] 11.2.3 Property 9: ENS permission record completeness
+      - Generate agents with `ensRecords.isSet === true`; assert rendered output includes all three fields: `max_spend`, `slippage`, `protocols`
+      - **Property 9: ENS permission record completeness**
+      - **Validates: Requirements 4.8, 7.2, 7.3**
+  - [ ] 11.3 Create `src/__tests__/property/verificationFlow.property.test.js`
+    - [ ] 11.3.1 Property 10: Verification step state rendering
+      - Generate `VerificationStepState` with random status; assert `timeMs` shown when status is `complete` or `error`, `error` message shown when status is `error`
+      - **Property 10: Verification step state rendering**
+      - **Validates: Requirements 6.3, 6.4**
+    - [ ] 11.3.2 Property 11: Verification pipeline step ordering
+      - Generate any combination of step statuses; assert rendered order is always ENS → DarkAgent → Smart Wallet → Base
+      - **Property 11: Verification pipeline step ordering**
+      - **Validates: Requirements 6.1**
+  - [ ] 11.4 Create `src/__tests__/property/executionSimulator.property.test.js`
+    - [ ] 11.4.1 Property 12: Execution simulator input validation
+      - Generate form submissions with empty fields or invalid EVM addresses; assert submission is blocked and error message is displayed
+      - **Property 12: Execution simulator input validation**
+      - **Validates: Requirements 10.3, 10.5**
+  - [ ] 11.5 Create `src/__tests__/property/systemBehavior.property.test.js`
+    - [ ] 11.5.1 Property 13: Theme preference persistence
+      - Generate theme values ('dark'|'light'); assert value written to `localStorage['darkagent-theme']` and read back correctly on simulated reload
+      - **Property 13: Theme preference persistence**
+      - **Validates: Requirements 19.2**
+    - [ ] 11.5.2 Property 14: Error message specificity
+      - Generate known error objects (INSUFFICIENT_FUNDS, unauthorized, frozen, NETWORK_ERROR); assert `classifyContractError` returns a message that does not equal the raw error string and contains a human-readable description
+      - **Property 14: Error message specificity**
+      - **Validates: Requirements 17.2**
+    - [ ] 11.5.3 Property 15: RPC retry backoff
+      - Generate sequences of failures; assert each successive retry delay is strictly greater than the previous, and total retries ≤ 3
+      - **Property 15: RPC retry backoff**
+      - **Validates: Requirements 17.7**
+
+- [ ] 12. Final checkpoint
+  - Ensure all tests pass, ask the user if questions arise.
+
+## Notes
+
+- Tasks marked with `*` are optional and can be skipped for a faster MVP
+- Each task references specific requirements for traceability
+- The design system in `index.css` is unchanged — all new components use existing CSS classes
+- `useMockData` ensures every page is functional even without a live contract deployment
+- Property tests use `fast-check` with minimum 100 iterations (`numRuns: 100`)
+- All property tests are in `src/__tests__/property/` and unit tests in `src/__tests__/unit/`

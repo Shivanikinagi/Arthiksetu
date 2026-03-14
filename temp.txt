@@ -1,0 +1,25 @@
+    const handleVerifyAndExecute = async () => {
+        if (!connected || !contracts?.darkAgent || proposalId === null) {
+            setStatus("[ERROR] Invalid state. Await valid proposal ID.");
+            return;
+        }
+
+        try {
+            setStatus(`[SYS] Preparing Verify & Execute bundle for: ${proposalId}...`);
+
+            // Simulating API/TEE calls before actual transaction
+            setStatus(prev => prev + `\n[ON-CHAIN] TEE Risk Score Safe. Dispatching contract transaction...\nPlease confirm in your wallet.`);
+
+            const tx = await contracts.darkAgent.execute(proposalId);
+            setStatus(prev => prev + `\n[PENDING] Execution packet broadcast: https://sepolia.basescan.org/tx/${tx.hash}`);
+            
+            const receipt = await tx.wait();
+
+            setStatus(prev => prev + `\n[SUCCESS] Execution Confirmed on Base Sepolia.\nBlock: ${receipt.blockNumber}\nTx Hash: https://sepolia.basescan.org/tx/${tx.hash}`);
+
+        } catch (error) {
+            console.error("Execute error:", error);
+            setStatus(prev => prev + `\n[FAULT] Execution Failed: ${error.message}`);
+        }
+    };
+

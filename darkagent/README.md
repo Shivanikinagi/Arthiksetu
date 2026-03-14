@@ -1,181 +1,208 @@
-# DarkAgent — AI Agent Permission Infrastructure for DeFi
+# DarkAgent Protocol
 
-> *"ENS subdomains are agent licenses. Create one per agent. Revoke anytime. Nobody needs to trust the agent. They just need to check the subdomain."*
+> *"ENS defines what your agent can do. BitGo makes sure it never does more. Coinbase Smart Wallet gives it a home. DarkAgent connects them all."*
 
-DarkAgent is the load-bearing decentralized infrastructure layer for AI agent permissions in DeFi. It solves the gap restricting institutional and mainstream adoption of autonomous agents: lack of standardized, on-chain, verifiable execution boundaries.
-
----
-
-## 🧠 The Core Idea
-
-### ENS Subdomains As Agent Identities
-
-```
-alice.eth OWNS agents as subdomains:
-
-  trading.alice.eth   → trading agent    (max $500, uniswap only)
-  yield.alice.eth     → yield agent      (max $5000, aave + compound)
-  dca.alice.eth       → DCA agent        (max $100/day)
-
-Each subdomain IS the agent.
-Each subdomain HAS its own rules.
-Each subdomain IS revokable.
-```
-
-**Subdomain = Agent License.** Like a driving license — issued by the owner, has specific permissions, can be revoked anytime, cannot be faked, on-chain permanent record.
+DarkAgent is load-bearing decentralized infrastructure layer for AI agent permissions in DeFi. It solves the exact gap currently restricting institutional and mainstream adoption of autonomous agents: lack of standardized, on-chain, verifiable execution boundaries.
 
 ---
 
-## 🏗 The Architecture
+## 🏗 The Architecture Flow
 
-```
+Our core pipeline is a single, bulletproof verification flow entirely secured on Base testnet:
+
+```text
 alice.eth
-   ↓
-Agent Registry (AgentRegistry.sol)
-(creates trading.alice.eth subdomain license)
-   ↓
-ENS Agent Resolver (ENSAgentResolver.sol)
-(reads agent.max_spend, agent.protocols, agent.active)
-   ↓
-Simulation Engine (SimulationEngine.sol)
-(fork-simulates DeFi tx: slippage, risk score, protocol check)
-   ↓
-DarkAgent Protocol (DarkAgent.sol)
-(verifies: license + ENS rules + simulation passed)
-   ↓
-BitGo Agent Policy Adapter (bitgo.js SDK)
-(enforces at wallet level, stealth address execution)
-   ↓
-Execute on Unlinkable Stealth Address
+(ENSIP-XX permission records)
+         ↓
+DarkAgent Resolver (ENSAgentResolver.sol)
+(reads + parses ENS)
+         ↓
+Verification Contract (DarkAgent.sol)
+(checks every rule dynamically on Base)
+         ↓
+Coinbase Smart Wallet (ERC-4337)
+(executes verified actions via smart wallet)
+         ↓
+CoinbaseSmartWalletAgent Adapter
+(spending limits, session keys, circuit breaker)
+         ↓
+Execute on Base / Base Sepolia
 ```
-
-### The Flow
-
-1. **AI agent proposes action** — "swap 1 ETH to USDC on Uniswap"
-2. **DarkAgent simulates the transaction** — fork simulation, risk scoring
-3. **Intent engine verifies policy** — checks ENS rules, agent license, simulation result
-4. **BitGo executes** — sends to stealth address, enforces velocity limits
 
 ---
 
-## 🪪 ENS Subdomains as Agent Licenses (AgentRegistry.sol)
+## 🔵 Coinbase Smart Wallet Integration
 
-Each agent you create becomes a licensed ENS subdomain with scoped permissions:
+We integrated [Coinbase Smart Wallet](https://github.com/coinbase/smart-wallet) — an ERC-4337 compliant smart contract wallet — as the execution layer for AI agents.
 
-```solidity
-// Create agent: trading.alice.eth
-registry.createAgent("trading", agentWallet, maxSpend, dailyLimit, slippageBps, protocols, expiry);
+### What We Built
 
-// Revoke (kill) agent
-registry.revokeAgent(node);
+**Smart Contract: `CoinbaseSmartWalletAgent.sol`**
+- Bridges Coinbase Smart Wallet with DarkAgent verification protocol
+- Agent authorization with per-transaction and daily spending limits
+- Session key support for gasless agent transactions
+- Emergency circuit breaker (instant wallet freeze)
+- Batch execution support
 
-// Transfer agent license to new owner
-registry.transferAgent(node, newOwner);
+**Frontend: Full Smart Wallet Dashboard**
+- Connect via Coinbase Smart Wallet (passkey authentication)
+- Register wallet with DarkAgent protocol
+- Authorize/revoke AI agents with configurable limits
+- Real-time agent authorization status monitoring
+- Emergency freeze/unfreeze controls
+- Protocol statistics dashboard
 
-// Check if agent is authorized
-registry.isAgentWalletAuthorized(agentWallet);
+**SDK: `sdk/smartwallet.js`**
+- Complete JavaScript SDK for smart wallet interactions
+- Wallet creation and registration
+- Agent authorization management
+- Verified execution helpers
+- Session key management
+
+### How It Works
+
+```javascript
+// 1. User connects via Coinbase Smart Wallet (passkeys)
+const wallet = useCoinbaseSmartWallet();
+
+// 2. Register smart wallet with DarkAgent
+await walletAgent.registerWallet(smartWalletAddress);
+
+// 3. Authorize an AI agent with spending limits
+await walletAgent.authorizeAgent(
+  agentAddress,
+  parseEther("1"),    // Max 1 ETH per transaction
+  parseEther("10"),   // Max 10 ETH per day
+  30 * 86400          // 30-day authorization
+);
+
+// 4. Agent proposes action → DarkAgent verifies → Smart Wallet executes
+await walletAgent.executeVerified(owner, proposalId, target, value, data);
 ```
 
-**What this enables:**
-- Agent marketplaces — buy `trading.alice.eth` with proven permissions
-- Agent inheritance — transfer `yield.alice.eth` to new wallet
-- Agent auditing — every tx linked to subdomain
-- Agent expiry — auto-expires after timestamp
+### Key Features
+
+| Feature | Description |
+|---------|-------------|
+| **Passkey Auth** | No seed phrases — authenticate with biometrics |
+| **ERC-4337** | Gas-sponsored transactions via account abstraction |
+| **Spending Limits** | Per-transaction and daily caps enforced on-chain |
+| **Circuit Breaker** | Instant wallet freeze blocks all agent activity |
+| **Session Keys** | Temporary keys for gasless agent transactions |
+| **Multi-Owner** | Multiple owners via EOA addresses and passkeys |
+| **ERC-1271** | Smart contract signature validation |
+| **Batch Execution** | Execute multiple verified actions atomically |
 
 ---
 
-## 🔬 DeFi Transaction Simulation (SimulationEngine.sol)
+## 🔵 BitGo Protocol Adapter (What We Built for BitGo)
 
-Before any execution, every transaction is fork-simulated:
+We didn't just spin up a wallet. We built the first **BitGo Agent Policy Adapter**.
 
+**What it does:**
+1. **Reads ENS permissions** directly mapping them to an agent profile.
+2. **Automatically creates matching BitGo policies**: Translates `agent.max_spend` into BitGo's enterprise `velocityLimit` engine, and `agent.protocols` into an `addressWhitelist`.
+3. Ensures strict **Privacy** by executing via `wallet.createAddress()`—generating a purely fresh un-linkable output address every single time an agent acts.
+
+```javascript
+// Excerpt from /sdk/bitgo.js AgentPolicyAdapter
+async syncPermissions(ensName, perms) {
+   // Generates matching BitGo enterprise policies instantly from ENS
+   await wallet.updatePolicyRule({
+     type: 'velocityLimit',
+     amountString: String(perms.maxSpend),
+     timeWindow: 86400 // Daily limit
+   });
+}
+
+async getExecutionAddress() {
+    // $1,200 Privacy Prize criteria hit precisely.
+    return await wallet.createAddress({ label: `agent-tx-${Date.now()}` });
+}
 ```
-AI Action → Fork Simulation → Risk Engine → Pass/Fail
-
-Risk Factors:
-  ✓ Slippage analysis
-  ✓ Protocol verification (is target on allowlist?)
-  ✓ Spend limit enforcement
-  ✓ Liquidation risk scoring
-  ✓ Anomaly detection (sudden large transfers)
-
-Risk Score: 0-1000 (threshold: 400 = 0.4)
-```
-
-If risk_score > 0.4, the transaction is **blocked before execution**.
 
 ---
 
-## 🔵 BitGo Protocol Adapter
+## 🪪 ENSIP-XX: Agent Permission Records (What We Built for ENS)
 
-### Privacy Layer ($1,200 Prize)
-- **Stealth Addresses via BitGo** — Agent never interacts via statically linked addresses
-- **Ephemeral Keypairs** — generates fresh keypair per transaction
-- **Zero Linkability** — creates completely unlinkable destination address
+We aren't just calling `getText()`. We are formally proposing **ENSIP-XX** to turn ENS from an identity service into the ultimate decentralized financial policy standard. 
 
-### DeFi Layer ($800 Prize)
-- **Multi-tier Approval** — small tx (<$50) auto-approved, large tx enforces ENS limits
-- **Policy Governed Automation** — syncs `agent.protocols` and `agent.max_spend` into BitGo velocity rules
-- **Emergency Freeze** — `agent.active = false` triggers instant zero-velocity lock
+By defining the `agent.*` prefix, *any* protocol can read what limits a user has enforced upon their AI Agents.
 
----
+*   `agent.max_spend`: Daily cap
+*   `agent.slippage`: AMM tolerance
+*   `agent.protocols`: Whitelist of DeFi routers (like Uniswap)
 
-## 🪪 ENSIP-XX: Agent Permission Records
-
-Formally proposing **ENSIP-XX** to turn ENS into the decentralized financial policy standard:
-
-| Record | Purpose | Example |
-|--------|---------|---------|
-| `agent.max_spend` | Daily cap | `1000 USDC` |
-| `agent.protocols` | Whitelist of DeFi routers | `uniswap,aave` |
-| `agent.active` | Master panic switch | `true/false` |
-| `agent.slippage` | Max slippage tolerance | `50` (0.5%) |
-| `agent.expiry` | License expiration | Unix timestamp |
+The newly deployed `ENSAgentResolver.sol` converts these standards into an easily callable struct that the `DarkAgent.sol` verification contract consumes strictly before any protocol execution state is verified.
 
 ---
 
-## 📦 Project Structure
+## 🎯 What We're Pitching
+
+**To Coinbase Judges:**
+"We integrated Coinbase Smart Wallet as the execution layer for verified AI agents. Users authenticate with passkeys, agents operate with on-chain spending limits, and a circuit breaker freezes everything instantly if needed."
+
+**To ENS Judges ($2,000 Creative + Pool):**
+"We proposed ENSIP-XX. ENS becomes the permission layer for all AI agents. Any protocol reads it using our ENSAgentResolver."
+
+**To BitGo Judges ($2,000 Privacy + DeFi):**
+"We built the first agent policy adapter for BitGo. ENS permissions automatically sync to BitGo policies. Agents cannot exceed limits, and every single execution fires from a perfectly fresh, un-linkable address."
+
+**To ETHMumbai / Base Judges:**
+"We built the infrastructure layer that every AI agent in DeFi needs. ENS defines the rules. Coinbase Smart Wallet executes them. Nobody can bypass either. It runs entirely on Base."
+
+---
+
+## 📁 Project Structure
 
 ```
-darkagent/
+Oracle/
 ├── contracts/
-│   ├── AgentRegistry.sol      — ENS subdomain agent licenses
-│   ├── SimulationEngine.sol   — DeFi transaction simulation & risk
-│   ├── DarkAgent.sol          — Core verification protocol
-│   ├── ENSAgentResolver.sol   — ENSIP-XX reference implementation
-│   └── interfaces/            — Protocol interfaces
-├── sdk/
-│   ├── agent-registry.js      — Agent license management SDK
-│   ├── simulation.js          — Simulation engine SDK
-│   ├── darkagent.js           — Core SDK (3-line integration)
-│   ├── bitgo.js               — BitGo stealth + policy adapter
-│   ├── fileverse.js           — Fileverse document storage
-│   ├── permit2.js             — Uniswap Permit2 gasless approvals
-│   └── mev-protection.js      — Flashbots MEV protection
+│   ├── DarkAgent.sol                    # Core verification protocol
+│   ├── ENSAgentResolver.sol             # ENSIP-XX permission records
+│   ├── CoinbaseSmartWalletAgent.sol     # Smart Wallet ↔ DarkAgent adapter
+│   └── interfaces/
+│       ├── IDarkAgent.sol               # Core protocol interface
+│       ├── IBitGoWallet.sol             # BitGo wallet interface
+│       └── ICoinbaseSmartWallet.sol     # Coinbase Smart Wallet interface
 ├── frontend/
-│   └── src/pages/
-│       ├── AgentManager.jsx   — Create/manage/kill agent licenses
-│       ├── Simulator.jsx      — DeFi transaction simulation UI
-│       ├── Permissions.jsx    — ENS policy configuration
-│       ├── Proposer.jsx       — Execute agent actions
-│       └── Dashboard.jsx      — Protocol audit trail
-├── test/
-│   └── DarkAgent.test.js      — Full E2E tests (14 test cases)
+│   └── src/
+│       ├── App.jsx                      # Main app with Smart Wallet nav
+│       ├── main.jsx                     # WagmiProvider + React Query setup
+│       ├── config/
+│       │   └── wagmi.js                 # Wagmi + Coinbase Wallet config
+│       ├── hooks/
+│       │   ├── useContracts.js          # Legacy MetaMask hook
+│       │   └── useSmartWallet.js        # Coinbase Smart Wallet hook
+│       ├── pages/
+│       │   ├── SmartWallet.jsx          # Smart Wallet dashboard
+│       │   ├── Dashboard.jsx            # Protocol activity timeline
+│       │   └── Proposer.jsx             # Agent execution simulator
+│       └── contracts/
+│           ├── abis.js                  # All contract ABIs
+│           └── deployment.json          # Deployed addresses
+├── sdk/
+│   ├── smartwallet.js                   # Smart Wallet SDK
+│   ├── bitgo.js                         # BitGo adapter
+│   └── darkagent.js                     # DarkAgent SDK
 ├── scripts/
-│   ├── deploy.js              — Deploys all 4 contracts
-│   ├── deploy-local.js        — Local Hardhat node deployment
-│   ├── create-bitgo-wallet.js — BitGo wallet setup
-│   └── ens-*.js               — ENS record management scripts
-└── docs/
-    └── ENSIP-Agent-Permissions.md — ENSIP-XX specification
+│   ├── deploy.js                        # Main deployment
+│   ├── deploy-smart-wallet.js           # Smart wallet adapter deployment
+│   └── ...
+└── test/
+    ├── DarkAgent.test.js                # Core protocol tests
+    └── CoinbaseSmartWalletAgent.test.js # Smart wallet integration tests
 ```
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Run the Project
+
+DarkAgent requires minimal setup:
 
 ```bash
-# Install
-cd darkagent && npm install
+# Install dependencies
+npm install
 
 # Compile contracts
 npx hardhat compile
@@ -183,49 +210,78 @@ npx hardhat compile
 # Run tests
 npx hardhat test
 
-# Deploy to Base Sepolia
-npx hardhat run scripts/deploy.js --network baseSepolia
+# Deploy smart wallet adapter to Base Sepolia
+npx hardhat run scripts/deploy-smart-wallet.js --network base_sepolia
 
-# Start frontend
-cd frontend && npm install && npm run dev
+# Run the frontend
+cd frontend
+npm install
+npm run dev
 ```
 
----
+### Environment Variables
 
-## 🧪 Test Coverage
+Copy `.env.example` to `.env` and configure:
 
-```
-DarkAgent Protocol — Full End to End
-  Agent Registry — ENS Subdomain Licenses
-    ✓ should create an agent license (subdomain)
-    ✓ should verify agent wallet is authorized
-    ✓ should support multiple agents per owner
-    ✓ should revoke (kill) an agent license
-    ✓ should transfer an agent license to new owner
-    ✓ should prevent non-owner from revoking
-  Simulation Engine — DeFi Risk Analysis
-    ✓ should simulate a safe transaction
-    ✓ should fail simulation when spend exceeds limit
-    ✓ should fail simulation for unverified protocol
-    ✓ should track user simulation history
-  Full Integrated Pipeline
-    ✓ should complete: create agent → propose → simulate → verify → execute
-    ✓ should reject execution if agent license is revoked
-    ✓ should reject verification if ENS master switch is false
-    ✓ should reject if simulation failed
+```bash
+PRIVATE_KEY=your_deployer_private_key
+BASE_SEPOLIA_RPC=https://sepolia.base.org
+BASESCAN_API_KEY=your_basescan_api_key
+DARKAGENT_CONTRACT=0x...  # After deployment
 ```
 
----
+### Frontend
 
-## 🏆 Hackathon Targets
+The frontend runs on Vite and connects to Base Sepolia. It supports two wallet connection methods:
 
-| Prize | What We Built | Status |
-|-------|---------------|--------|
-| **ENS** | ENS subdomains as agent licenses + ENSIP-XX | ✅ |
-| **BitGo Privacy ($1,200)** | Stealth address system via ephemeral keypairs | ✅ |
-| **BitGo DeFi ($800)** | Multi-tier policy automation + emergency freeze | ✅ |
-| **Simulation Engine** | Fork-simulate DeFi txs with risk scoring | ✅ |
+1. **Coinbase Smart Wallet** (recommended) — Passkey authentication, ERC-4337
+2. **MetaMask** — Traditional EOA wallet
 
----
+Navigate to `http://localhost:5173` after running `npm run dev`.
 
-*Built at ETHGlobal 2026*
+
+## Blink Proxy Demo
+
+DarkAgent now includes a working Blink proxy server that turns the protocol into policy-gated middleware for AI-generated Blinks.
+
+```text
+AI Agent generates Blink
+        -> DarkAgent Blink Proxy GET/POST endpoints
+        -> ENS policy watcher resolves alice.eth rulebook
+        -> Policy engine allows or blocks
+        -> BitGo adapter executes through a fresh stealth address
+```
+
+### What is live now
+
+- `server/index.js` exposes a Blink-style action server with manifest, registry, GET metadata, and POST execution.
+- `server/lib/policyWatcher.js` polls the ENS policy store and only applies changes when the watcher syncs.
+- `server/lib/bitgoExecutionAdapter.js` makes stealth-address generation mandatory on every approved execution and can fall back to mock mode for local demos.
+- `frontend/src/pages/BlinkProxy.jsx` gives you a presentation-ready control room for the full story: blocked Blink, ENS update, watcher sync, successful rerun.
+
+### Demo commands
+
+```bash
+# Terminal 1 - Blink proxy backend
+npm run blink:server
+
+# Terminal 2 - frontend
+cd frontend
+npm run dev
+
+# Optional: one-command local stack
+cd ..
+npm run demo:blink
+
+# Focused backend verification
+npm run blink:test
+```
+
+### The 2-minute demo flow
+
+1. Open the `Blink Proxy` page.
+2. Click `Reset Demo` to restore `alice.eth` to a 500 USD spend cap.
+3. Click `Load 600 USD Blocked Demo`, then `Execute Blink` -> DarkAgent hard-blocks it.
+4. Click `Raise alice.eth to 1000 USD`.
+5. Click `Force Watcher Sync` to simulate the ENS watcher applying the updated policy.
+6. Click `Execute Blink` again -> the same Blink now clears policy, BitGo returns a receipt, and the stealth address is shown in the UI.
