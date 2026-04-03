@@ -240,12 +240,12 @@ async def clear_income():
 @app.post("/api/parse_sms")
 async def parse_sms_endpoint(request: SMSRequest):
     """
-    Parses SMS using AI-based NLP for better extraction.
+    Parses SMS using backend NLP/rule-based extraction.
     Also adds detected credits to the earnings store.
     """
     try:
-        # Use AI-based parsing instead of regex
-        results = await parse_sms_with_ai(request.messages)
+        # Use backend parser (no external LLM/API key dependency)
+        results = parser.parse_batch(request.messages)
         
         # Calculate summary
         total_credit = sum(r.get('amount', 0) for r in results if r.get('type') == 'credit')

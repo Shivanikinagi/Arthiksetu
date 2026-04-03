@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { MessageSquare, Loader2, CheckCircle, DollarSign, Calendar, Building2, Sparkles, AlertTriangle, ArrowRight, Zap, RefreshCw } from 'lucide-react';
 import { API_BASE_URL } from '../config';
+import { useEarnings } from '../EarningsContext';
 
 interface ParsedSMS {
     raw: string;
@@ -20,6 +21,7 @@ export function SMSAnalyzer() {
     const [parsedResults, setParsedResults] = useState<ParsedSMS[]>([]);
     const [loading, setLoading] = useState(false);
     const [showFraud, setShowFraud] = useState(false);
+    const { refreshEarnings } = useEarnings();
 
     // Fraud Detection Logic
     const fraudAlerts = parsedResults.filter((r: ParsedSMS) => r.type === 'debit' && r.amount > 5000);
@@ -38,6 +40,8 @@ export function SMSAnalyzer() {
 
             const data = await response.json();
             setParsedResults(data.transactions || []);
+            // Refresh shared earnings state so Dashboard & other pages update
+            await refreshEarnings();
         } catch (error) {
             console.error('SMS parsing error:', error);
             alert('Failed to parse SMS. Make sure backend is running.');

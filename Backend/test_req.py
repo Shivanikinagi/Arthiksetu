@@ -1,0 +1,1 @@
+import requests; print(requests.post("http://localhost:8000/api/predict_risk", json={"data": [{"date": "2026-03", "amount": 14500}]}).text)

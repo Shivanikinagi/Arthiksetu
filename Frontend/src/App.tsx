@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { EarningsProvider } from './EarningsContext';
 import { Navigation } from './components/Navigation';
 import { DashboardPage } from './components/DashboardPage';
 import { TaxPage } from './components/TaxPage';
@@ -98,6 +99,7 @@ export default function App() {
   };
 
   return (
+    <EarningsProvider>
     <div className="min-h-screen bg-gray-50 font-['Inter',sans-serif]">
       <Navigation currentPage={currentPage === 'dashboard' || currentPage === 'unified-dashboard' || currentPage === 'sms-analyzer' || currentPage === 'tax' || currentPage === 'schemes' || currentPage === 'loans' || currentPage === 'reports' || currentPage === 'profile' || currentPage === 'ai-assistant' || currentPage === 'document-verify' || currentPage === 'privacy-dashboard' ? currentPage : 'dashboard'} onNavigate={(page: any) => setCurrentPage(page)} />
       <main>
@@ -176,5 +178,6 @@ export default function App() {
         </div>
       </footer>
     </div>
+    </EarningsProvider>
   );
 }

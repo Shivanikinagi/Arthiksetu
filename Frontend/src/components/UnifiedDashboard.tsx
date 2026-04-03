@@ -4,10 +4,12 @@ import { Button } from './ui/button';
 import { TrendingUp, AlertTriangle, RefreshCw, BarChart2, PieChart as PieChartIcon, LayoutDashboard, Sparkles, ArrowRight, Activity } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Area, AreaChart } from 'recharts';
 import { API_BASE_URL } from '../config';
+import { useEarnings } from '../EarningsContext';
 
 const COLORS = ['#F7931E', '#0A1F44', '#1E7F5C', '#3B82F6', '#F59E0B', '#8B5CF6'];
 
 export function UnifiedDashboard() {
+    const { incomeSources: ctxSources, monthlyData: ctxMonthly, refreshEarnings } = useEarnings();
     const [platformData, setPlatformData] = useState<Record<string, number>>({});
     const [analysis, setAnalysis] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -15,22 +17,16 @@ export function UnifiedDashboard() {
 
     const totalEarnings = Object.values(platformData).reduce((sum, val) => sum + val, 0);
 
-    const fetchAnalysis = async () => {
+    const fetchAnalysis = async (sources: typeof ctxSources, monthly: typeof ctxMonthly) => {
         setLoading(true);
         try {
-            // First fetch actual income sources from dashboard
-            const dashResponse = await fetch(`${API_BASE_URL}/api/dashboard`);
-            const dashData = await dashResponse.json();
-            const sources = dashData.incomeSources || [];
-            
-            // Build platform data from actual income sources
+            // Build platform data from shared earnings context
             const dynPlatformData: Record<string, number> = {};
             sources.forEach((s: any) => {
                 const name = s.name || s.source || 'Other';
                 dynPlatformData[name] = (dynPlatformData[name] || 0) + (s.amount || 0);
             });
             
-            // If no income sources exist, show a message instead of hardcoded data
             if (Object.keys(dynPlatformData).length === 0) {
                 setPlatformData({});
                 setLoading(false);
@@ -51,10 +47,8 @@ export function UnifiedDashboard() {
             const data = await response.json();
             setAnalysis(data);
 
-            // Build earnings history from monthly data
-            const monthlyData = dashData.earningsData || [];
-            const earningsHistory = monthlyData.length > 0 
-                ? monthlyData.map((m: any) => ({ date: m.month, amount: m.amount }))
+            const earningsHistory = monthly.length > 0 
+                ? monthly.map((m: any) => ({ date: m.month, amount: m.amount }))
                 : [{ date: new Date().toISOString().slice(0, 7), amount: dynTotal }];
 
             const riskResponse = await fetch(`${API_BASE_URL}/api/predict_risk`, {
@@ -71,9 +65,10 @@ export function UnifiedDashboard() {
         }
     };
 
+    // Re-run analysis whenever earnings context data changes
     useEffect(() => {
-        fetchAnalysis();
-    }, []);
+        fetchAnalysis(ctxSources, ctxMonthly);
+    }, [ctxSources, ctxMonthly]);
 
     const chartData = Object.entries(platformData).map(([name, value]) => ({
         name,
@@ -108,7 +103,7 @@ export function UnifiedDashboard() {
                         <p className="text-gray-600 text-lg">Aggregated income analysis across all your gig platforms</p>
                     </div>
                     <Button
-                        onClick={fetchAnalysis}
+                        onClick={() => refreshEarnings()}
                         disabled={loading}
                         className="group bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 shadow-sm hover:shadow-md px-6 py-3 rounded-xl transition-all"
                     >

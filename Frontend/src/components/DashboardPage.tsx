@@ -1,44 +1,16 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState } from 'react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { CheckCircle2, AlertCircle, TrendingUp, Upload, Loader2, MessageSquare, Bot, FileSearch, ShieldCheck, Gift, ArrowRight } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { API_BASE_URL } from '../config';
+import { useEarnings } from '../EarningsContext';
 
 export function DashboardPage({ onNavigate }: { onNavigate?: (page: string) => void }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [incomeSources, setIncomeSources] = useState<any[]>([]);
-  const [monthlyData, setMonthlyData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { incomeSources, monthlyData, totalEarnings, loading, error, refreshEarnings } = useEarnings();
   const [uploading, setUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchDashboard = () => {
-    setLoading(true);
-    fetch(`${API_BASE_URL}/api/dashboard`)
-      .then(res => {
-        if (!res.ok) throw new Error('Backend not responding');
-        return res.json();
-      })
-      .then(data => {
-        console.log('Dashboard data:', data);
-        setIncomeSources(data.incomeSources || []);
-        setMonthlyData(data.earningsData || []);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error("Failed to fetch dashboard data", err);
-        setError('Unable to connect to backend. Please ensure the backend server is running on port 8000.');
-        setLoading(false);
-      });
-  };
-
-  useEffect(() => {
-    fetchDashboard();
-  }, []);
-
-  const totalEarnings = incomeSources.reduce((sum, source) => sum + source.amount, 0);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -64,9 +36,9 @@ export function DashboardPage({ onNavigate }: { onNavigate?: (page: string) => v
             fileName: file.name,
             success: data.status === 'verified'
           });
-          // Refresh dashboard data to show new income
+          // Refresh shared earnings state to show new income
           if (data.status === 'verified') {
-            setTimeout(() => fetchDashboard(), 500);
+            setTimeout(() => refreshEarnings(), 500);
           }
         } else {
           setUploadResult({
